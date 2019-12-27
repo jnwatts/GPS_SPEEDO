@@ -1,0 +1,6 @@
+En	Yellow
+Gnd	Black
+Rx	Green
+Tx	Blue
+Vcc	Red
+Pps	White
