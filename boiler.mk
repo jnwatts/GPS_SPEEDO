@@ -87,6 +87,13 @@ $(PROJECT).bin: $(PROJECT).elf
 $(PROJECT).hex: $(PROJECT).elf
 	$(ELF2BIN) -O ihex $< $@
 
+flash: $(PROJECT).bin
+	cp $(PROJECT).bin /m/MBED/
+
+serial:
+	stty -F /dev/ttyACM0 speed 9600 raw
+	cat /dev/ttyACM0
+
 clean:
 	rm -f $(OBJECTS) $(SYS_OBJECTS) $(DEPS) $(PROJECT).elf $(PROJECT).bin $(PROJECT).hex $(PROJECT).link_script.ld
 
