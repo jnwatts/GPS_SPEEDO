@@ -5,15 +5,14 @@ extern "C" {
 }
 #include "pins.h"
 
-// #define USE_SPI
-
-
-// SPI spi(SDIO_MOSI, SDIO_MISO, SDIO_SCLK);
-// DigitalOut cs(SDIO_CS);
-// Timer timer;
-// int timeout_ms;
+#define USE_SPI
 
 #ifdef USE_SPI
+
+SPI spi(SDIO_MOSI, SDIO_MISO, SDIO_SCLK);
+DigitalOut cs(SDIO_CS);
+Timer timer;
+int timeout_ms;
 
 void SPI_Init (void)
 {
