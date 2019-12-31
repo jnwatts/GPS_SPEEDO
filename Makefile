@@ -2,6 +2,9 @@
 # Project settings
 
 PROJECT := GPS_SPEEDO
+TARGET_CPU := KL25Z
+# TARGET_CPU := KL05Z
+MOUNT_POINT := /m/FRDM-KL25Z
 
 # Project settings
 ###############################################################################
@@ -71,18 +74,18 @@ SYS_SRC += $(HAL_DIR)port_api.c
 SYS_SRC += $(HAL_DIR)pwmout_api.c
 SYS_SRC += $(HAL_DIR)rtc_api.c
 SYS_SRC += $(HAL_DIR)sleep.c
-SYS_SRC += $(HAL_DIR)TARGET_KL05Z/gpio_irq_api.c
-SYS_SRC += $(HAL_DIR)TARGET_KL05Z/mbed_overrides.c
-SYS_SRC += $(HAL_DIR)TARGET_KL05Z/PeripheralPins.c
-SYS_SRC += $(HAL_DIR)TARGET_KL05Z/serial_api.c
-SYS_SRC += $(HAL_DIR)TARGET_KL05Z/spi_api.c
+SYS_SRC += $(HAL_DIR)TARGET_$(TARGET_CPU)/gpio_irq_api.c
+SYS_SRC += $(HAL_DIR)TARGET_$(TARGET_CPU)/mbed_overrides.c
+SYS_SRC += $(HAL_DIR)TARGET_$(TARGET_CPU)/PeripheralPins.c
+SYS_SRC += $(HAL_DIR)TARGET_$(TARGET_CPU)/serial_api.c
+SYS_SRC += $(HAL_DIR)TARGET_$(TARGET_CPU)/spi_api.c
 SYS_SRC += $(HAL_DIR)us_ticker.c
 
-CMSIS_DIR := mbed/targets/cmsis/TARGET_Freescale/TARGET_KLXX/TARGET_KL05Z/
+CMSIS_DIR := mbed/targets/cmsis/TARGET_Freescale/TARGET_KLXX/TARGET_$(TARGET_CPU)/
 
 SYS_SRC += $(CMSIS_DIR)cmsis_nvic.c
-SYS_SRC += $(CMSIS_DIR)system_MKL05Z4.c
-SYS_SRC += $(CMSIS_DIR)TOOLCHAIN_GCC_ARM/startup_MKL05Z4.S
+SYS_SRC += $(CMSIS_DIR)system_M$(TARGET_CPU)4.c
+SYS_SRC += $(CMSIS_DIR)TOOLCHAIN_GCC_ARM/startup_M$(TARGET_CPU)4.S
 
 INCLUDE_PATHS += -I.
 INCLUDE_PATHS += -Imillis
@@ -90,7 +93,7 @@ INCLUDE_PATHS += -Ipff
 INCLUDE_PATHS += -IulibSD
 INCLUDE_PATHS += -Imbed
 INCLUDE_PATHS += -I$(HAL_DIR)
-INCLUDE_PATHS += -I$(HAL_DIR)TARGET_KL05Z/
+INCLUDE_PATHS += -I$(HAL_DIR)TARGET_$(TARGET_CPU)/
 INCLUDE_PATHS += -I$(CMSIS_DIR)
 INCLUDE_PATHS += -Imbed/api
 INCLUDE_PATHS += -Imbed/hal
@@ -99,7 +102,7 @@ INCLUDE_PATHS += -Imbed/targets/cmsis
 
 LIBRARY_PATHS := -L$(CMSIS_DIR)TOOLCHAIN_GCC_ARM 
 # LIBRARIES := -lmbed
-LINKER_SCRIPT ?= mbed/targets/cmsis/TARGET_Freescale/TARGET_KLXX/TARGET_KL05Z/TOOLCHAIN_GCC_ARM/MKL05Z4.ld
+LINKER_SCRIPT ?= mbed/targets/cmsis/TARGET_Freescale/TARGET_KLXX/TARGET_$(TARGET_CPU)/TOOLCHAIN_GCC_ARM/M$(TARGET_CPU)4.ld
 
 # Objects and Paths
 ###############################################################################

@@ -88,7 +88,7 @@ $(PROJECT).hex: $(PROJECT).elf
 	$(ELF2BIN) -O ihex $< $@
 
 flash: $(PROJECT).bin
-	cp $(PROJECT).bin /m/MBED/
+	cp $(PROJECT).bin $(MOUNT_POINT)
 
 serial:
 	stty -F /dev/ttyACM0 speed 9600 raw
