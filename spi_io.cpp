@@ -13,6 +13,7 @@ SPI spi(SDIO_MOSI, SDIO_MISO, SDIO_SCLK);
 DigitalOut cs(SDIO_CS);
 Timer timer;
 int timeout_ms;
+bool timer_en = false;
 
 void SPI_Init (void)
 {
@@ -57,17 +58,19 @@ void SPI_Freq_Low(void)
 void SPI_Timer_On(WORD ms)
 {
     timeout_ms = ms;
+    timer_en = true;
     timer.reset();
     timer.start();
 }
 
 BOOL SPI_Timer_Status(void)
 {
-    return (timer.read_ms() < timeout_ms);
+    return (timer.read_ms() < timeout_ms) && timer_en;
 }
 
 void SPI_Timer_Off(void)
 {
+    timer_en = false;
     timer.stop();
 }
 
