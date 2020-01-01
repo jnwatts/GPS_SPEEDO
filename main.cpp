@@ -159,7 +159,7 @@ void show_speed(void)
         char buf[6];
         if (speed > 999.9)
             speed = 999.9; // Let's... hope not.
-        snprintf(buf, sizeof(buf), "%3.1f", speed);
+        snprintf(buf, sizeof(buf), "%4d", (int)floor(speed));
         tm1650.puts(buf);
         set_color(COLOR_GREEN, 0.500);
     } else {
