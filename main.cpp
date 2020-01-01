@@ -33,14 +33,20 @@ volatile bool gps_changed = false;
 Timer display_timer;
 const int DISPLAY_MAX_TIME_MS = 100;
 
-// #define HAVE_GPS
+#define HAVE_GPS
+#define DEBUG_GPS_INPUT
 
 #ifdef HAVE_GPS
 Serial gps_uart(GPS_TX, GPS_RX); //TODO: PPS? EN?
+DigitalOut gps_en(GPS_EN);
 
 void uart_cb(void)
 {
-    if (gps.encode(gps_uart.getc()))
+    int c = gps_uart.getc();
+#ifdef DEBUG_GPS_INPUT
+    fputc(c, stdout);
+#endif
+    if (gps.encode(c))
         gps_changed = true;
 }
 #endif
@@ -60,6 +66,7 @@ int main()
     display_timer.start();
 
 #ifdef HAVE_GPS
+    gps_en = 0;
     gps_uart.baud(9600);
     gps_uart.attach(uart_cb);
 #endif
@@ -73,6 +80,10 @@ int main()
     if (!odom.load()) {
         show_error(ERR_DISK);
     }
+
+#ifdef HAVE_GPS
+    gps_en = 1;
+#endif
 
     while (true) {
         if (gps_changed) {
