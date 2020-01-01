@@ -18,9 +18,10 @@ SRC += spi_io.cpp
 SRC += TinyGPS.cpp
 SRC += tm1650.cpp
 SRC += millis/millis.cpp
-SRC += pff/diskio.c
-SRC += pff/pff.c
-SRC += ulibSD/sd_io.c
+SRC += sd-reader/byteordering.c
+SRC += sd-reader/fat.c
+SRC += sd-reader/partition.c
+SRC += sd-reader/sd_raw.c
 
 API_DIR := mbed/common/
 
@@ -89,8 +90,6 @@ SYS_SRC += $(CMSIS_DIR)TOOLCHAIN_GCC_ARM/startup_M$(TARGET_CPU)4.S
 
 INCLUDE_PATHS += -I.
 INCLUDE_PATHS += -Imillis
-INCLUDE_PATHS += -Ipff
-INCLUDE_PATHS += -IulibSD
 INCLUDE_PATHS += -Imbed
 INCLUDE_PATHS += -I$(HAL_DIR)
 INCLUDE_PATHS += -I$(HAL_DIR)TARGET_$(TARGET_CPU)/

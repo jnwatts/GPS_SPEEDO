@@ -1,13 +1,9 @@
+#include <stdio.h>
 #include <mbed.h>
 
-extern "C" {
 #include "spi_io.h"
-}
+#include "common.h"
 #include "pins.h"
-
-#define USE_SPI
-
-#ifdef USE_SPI
 
 SPI spi(SDIO_MOSI, SDIO_MISO, SDIO_SCLK);
 DigitalOut cs(SDIO_CS);
@@ -18,18 +14,18 @@ bool timer_en = false;
 void SPI_Init (void)
 {
     SPI_CS_High();
+    SPI_Freq_Low();
     spi.format(8, 0);
-    spi.frequency(1000000);
 }
 
-BYTE SPI_RW (BYTE d)
+unsigned int SPI_RW (unsigned int d)
 {
     return spi.write(d);
 }
 
 void SPI_Release(void)
 {
-    WORD idx;
+    int idx;
     for (idx=512; idx && (SPI_RW(0xFF)!=0xFF); idx--);
 }
 
@@ -55,7 +51,7 @@ void SPI_Freq_Low(void)
     spi.frequency(300000);
 }
 
-void SPI_Timer_On(WORD ms)
+void SPI_Timer_On(int ms)
 {
     timeout_ms = ms;
     timer_en = true;
@@ -63,7 +59,7 @@ void SPI_Timer_On(WORD ms)
     timer.start();
 }
 
-BOOL SPI_Timer_Status(void)
+bool SPI_Timer_Status(void)
 {
     return (timer.read_ms() < timeout_ms) && timer_en;
 }
@@ -73,27 +69,3 @@ void SPI_Timer_Off(void)
     timer_en = false;
     timer.stop();
 }
-
-#else
-
-void SPI_Init (void) { }
-
-BYTE SPI_RW (BYTE d) { return 0xFF; }
-
-void SPI_Release(void) { }
-
-void SPI_CS_Low(void) { }
-
-void SPI_CS_High(void) { }
-
-void SPI_Freq_High(void) { }
-
-void SPI_Freq_Low(void) { }
-
-void SPI_Timer_On(WORD ms) { }
-
-BOOL SPI_Timer_Status(void) { return false; }
-
-void SPI_Timer_Off(void) { }
-
-#endif
