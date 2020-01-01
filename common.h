@@ -10,6 +10,7 @@ enum color_t {
     COLOR_GREEN = 1u<<1,
     COLOR_BLUE = 1u<<2,
     COLOR_ORANGE = COLOR_RED|COLOR_GREEN,
+    COLOR_WHITE = COLOR_RED|COLOR_GREEN|COLOR_BLUE,
 };
 
 enum display_mode_t {
