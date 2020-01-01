@@ -27,18 +27,23 @@ mode_func_t mode_func[] = {
 };
 
 TinyGPS gps;
-Serial gps_uart(PTB2, PTB1);
 Odom odom;
 TM1650 tm1650(TM1650_DIO, TM1650_CLK);
 volatile bool gps_changed = false;
 Timer display_timer;
 const int DISPLAY_MAX_TIME_MS = 100;
 
+// #define HAVE_GPS
+
+#ifdef HAVE_GPS
+Serial gps_uart(GPS_TX, GPS_RX); //TODO: PPS? EN?
+
 void uart_cb(void)
 {
     if (gps.encode(gps_uart.getc()))
         gps_changed = true;
 }
+#endif
 
 int main()
 {
@@ -54,39 +59,41 @@ int main()
 
     display_timer.start();
 
-   // gps_uart.baud(9600);
-   // gps_uart.attach(uart_cb);
+#ifdef HAVE_GPS
+    gps_uart.baud(9600);
+    gps_uart.attach(uart_cb);
+#endif
 
-//    /* TODO:
-//    * (Other than testing)
-//    * - Increase baud rate for gps (check datasheet)
-//    * - Use "keys" to get to move through display modes
-//    * - Odometer: Test logic & integrate https://os.mbed.com/handbook/SDFileSystem for accessing SDCard.
-//    * - Oh... poop... sdfilesystem requires mbed-rtos/os? :-/
-//    */
-    if (odom.load() < 0) {
+   /* TODO:
+   * (Other than testing)
+   * - Integrate GPS
+   * - Increase baud rate for gps (check datasheet)
+   * - Use "keys" to get to move through display modes
+   */
+    if (!odom.load()) {
         show_error(ERR_DISK);
     }
-//
-//    while (true) {
-//        if (gps_changed) {
-//            long lat, lon;
-//            unsigned long age;
-//
-//            gps.get_position(&lat, &lon, &age);
-//            if (gps.gps_good_data())
-//                odom.update_position(lat, lon);
-//            else
-//                odom.invalidate_position();
-//
-//            mode_func[display_mode]();
-//            
-//            gps_changed = false;
-//            display_timer.start();
-//        } else if (display_timer.read_ms() >= DISPLAY_MAX_TIME_MS) {
-//            mode_func[display_mode]();
-//        }
-//    }
+
+    while (true) {
+        if (gps_changed) {
+            long lat, lon;
+            unsigned long age;
+
+            gps.get_position(&lat, &lon, &age);
+            if (gps.gps_good_data())
+                odom.update_position(lat, lon);
+            else
+                odom.invalidate_position();
+
+            mode_func[display_mode]();
+
+            gps_changed = false;
+            display_timer.reset();
+        } else if (display_timer.read_ms() >= DISPLAY_MAX_TIME_MS) {
+            mode_func[display_mode]();
+            display_timer.reset();
+        }
+    }
 }
 
 void display_test(void)
