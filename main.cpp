@@ -51,7 +51,7 @@ int main()
     tm1650.setDisplay(true);
 
     display_test();
-    
+
     display_timer.start();
 
    // gps_uart.baud(9600);
@@ -95,7 +95,7 @@ void display_test(void)
     const float delay_b = 0.05;
 
     tm1650.clear();
-    
+
     tm1650.setBrightness(8);
 
     tm1650.locate(0);
@@ -104,13 +104,13 @@ void display_test(void)
         tm1650.putc('.');
         wait(delay);
     }
-    
+
     for (int i = 8; i >= 0; i--) {
         tm1650.setBrightness(i);
         wait(delay_b);
     }
     wait(delay);
-    
+
     for (int i = 0; i <= 8; i++) {
         tm1650.setBrightness(i);
         wait(delay_b);
@@ -205,12 +205,12 @@ void show_odom(void)
         default:
             return;
     }
-    
+
     char buf[16];
     snprintf(buf, sizeof(buf), fmt, dist);
     tm1650.puts(buf);
 }
-    
+
 void set_odom(void)
 {
 }
