@@ -69,6 +69,7 @@ C_FLAGS += -DMBED_TRAP_ERRORS_ENABLED=1
 C_FLAGS += -DMBED_RTOS_SINGLE_THREAD
 C_FLAGS += -mcpu=cortex-m0plus
 C_FLAGS += -mthumb
+C_FLAGS += -DLITTLE_ENDIAN=1
 
 CXX_FLAGS += -std=gnu++14
 CXX_FLAGS += -fno-rtti
@@ -134,6 +135,7 @@ CXX_FLAGS += -DMBED_TRAP_ERRORS_ENABLED=1
 CXX_FLAGS += -DMBED_RTOS_SINGLE_THREAD
 CXX_FLAGS += -mcpu=cortex-m0plus
 CXX_FLAGS += -mthumb
+CXX_FLAGS += -DLITTLE_ENDIAN=1
 
 ASM_FLAGS += -x
 ASM_FLAGS += assembler-with-cpp
