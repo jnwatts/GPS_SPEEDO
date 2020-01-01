@@ -1,4 +1,3 @@
-
 /*
  * Copyright (c) 2006-2012 by Roland Riegel <feedback@roland-riegel.de>
  *
@@ -9,7 +8,7 @@
  */
 
 #include <string.h>
-#include <avr/io.h>
+#include <spi_io.h>
 #include "sd_raw.h"
 
 /**
@@ -171,32 +170,11 @@ static uint8_t sd_raw_send_command(uint8_t command, uint32_t arg);
  */
 uint8_t sd_raw_init()
 {
-    /* enable inputs for reading card status */
-    configure_pin_available();
-    configure_pin_locked();
-
-    /* enable outputs for MOSI, SCK, SS, input for MISO */
-    configure_pin_mosi();
-    configure_pin_sck();
-    configure_pin_ss();
-    configure_pin_miso();
-
-    unselect_card();
-
-    /* initialize SPI with lowest frequency; max. 400kHz during identification mode of card */
-    SPCR = (0 << SPIE) | /* SPI Interrupt Enable */
-           (1 << SPE)  | /* SPI Enable */
-           (0 << DORD) | /* Data Order: MSB first */
-           (1 << MSTR) | /* Master mode */
-           (0 << CPOL) | /* Clock Polarity: SCK low when idle */
-           (0 << CPHA) | /* Clock Phase: sample on rising SCK edge */
-           (1 << SPR1) | /* Clock Frequency: f_OSC / 128 */
-           (1 << SPR0);
-    SPSR &= ~(1 << SPI2X); /* No doubled clock frequency */
+    SPI_Init();
 
     /* initialization procedure */
     sd_raw_card_type = 0;
-    
+
     if(!sd_raw_available())
         return 0;
 
@@ -207,8 +185,10 @@ uint8_t sd_raw_init()
         sd_raw_rec_byte();
     }
 
+    SPI_Freq_Low();
+
     /* address card */
-    select_card();
+    SPI_CS_Low();
 
     /* reset card */
     uint8_t response;
@@ -220,7 +200,7 @@ uint8_t sd_raw_init()
 
         if(i == 0x1ff)
         {
-            unselect_card();
+            SPI_CS_High();
             return 0;
         }
     }
@@ -280,7 +260,7 @@ uint8_t sd_raw_init()
 
         if(i == 0x7fff)
         {
-            unselect_card();
+            SPI_CS_High();
             return 0;
         }
     }
@@ -290,7 +270,7 @@ uint8_t sd_raw_init()
     {
         if(sd_raw_send_command(CMD_READ_OCR, 0))
         {
-            unselect_card();
+            SPI_CS_High();
             return 0;
         }
 
@@ -306,16 +286,15 @@ uint8_t sd_raw_init()
     /* set block size to 512 bytes */
     if(sd_raw_send_command(CMD_SET_BLOCKLEN, 512))
     {
-        unselect_card();
+        SPI_CS_High();
         return 0;
     }
 
     /* deaddress card */
-    unselect_card();
+    SPI_CS_High();
 
     /* switch to highest SPI frequency possible */
-    SPCR &= ~((1 << SPR1) | (1 << SPR0)); /* Clock Frequency: f_OSC / 4 */
-    SPSR |= (1 << SPI2X); /* Doubled Clock Frequency: f_OSC / 2 */
+    SPI_Freq_High();
 
 #if !SD_RAW_SAVE_RAM
     /* the first block is likely to be accessed first, so precache it here */
@@ -361,10 +340,7 @@ uint8_t sd_raw_locked()
  */
 void sd_raw_send_byte(uint8_t b)
 {
-    SPDR = b;
-    /* wait for byte to be shifted out */
-    while(!(SPSR & (1 << SPIF)));
-    SPSR &= ~(1 << SPIF);
+    SPI_RW(b);
 }
 
 /**
@@ -377,11 +353,7 @@ void sd_raw_send_byte(uint8_t b)
 uint8_t sd_raw_rec_byte()
 {
     /* send dummy data for receiving some */
-    SPDR = 0xff;
-    while(!(SPSR & (1 << SPIF)));
-    SPSR &= ~(1 << SPIF);
-
-    return SPDR;
+    return SPI_RW(0xff);
 }
 
 /**
@@ -464,7 +436,7 @@ uint8_t sd_raw_read(offset_t offset, uint8_t* buffer, uintptr_t length)
 #endif
 
             /* address card */
-            select_card();
+            SPI_CS_Low();
 
             /* send single block request */
 #if SD_RAW_SDHC
@@ -473,7 +445,7 @@ uint8_t sd_raw_read(offset_t offset, uint8_t* buffer, uintptr_t length)
             if(sd_raw_send_command(CMD_READ_SINGLE_BLOCK, block_address))
 #endif
             {
-                unselect_card();
+                SPI_CS_High();
                 return 0;
             }
 
@@ -505,7 +477,7 @@ uint8_t sd_raw_read(offset_t offset, uint8_t* buffer, uintptr_t length)
             sd_raw_rec_byte();
             
             /* deaddress card */
-            unselect_card();
+            SPI_CS_High();
 
             /* let card some time to finish */
             sd_raw_rec_byte();
@@ -572,7 +544,7 @@ uint8_t sd_raw_read_interval(offset_t offset, uint8_t* buffer, uintptr_t interva
     return 1;
 #else
     /* address card */
-    select_card();
+    SPI_CS_Low();
 
     uint16_t block_offset;
     uint16_t read_length;
@@ -591,7 +563,7 @@ uint8_t sd_raw_read_interval(offset_t offset, uint8_t* buffer, uintptr_t interva
         if(sd_raw_send_command(CMD_READ_SINGLE_BLOCK, offset - block_offset))
 #endif
         {
-            unselect_card();
+            SPI_CS_High();
             return 0;
         }
 
@@ -639,7 +611,7 @@ uint8_t sd_raw_read_interval(offset_t offset, uint8_t* buffer, uintptr_t interva
     } while(!finished);
     
     /* deaddress card */
-    unselect_card();
+    SPI_CS_High();
 
     /* let card some time to finish */
     sd_raw_rec_byte();
@@ -711,7 +683,7 @@ uint8_t sd_raw_write(offset_t offset, const uint8_t* buffer, uintptr_t length)
         }
 
         /* address card */
-        select_card();
+        SPI_CS_Low();
 
         /* send single block request */
 #if SD_RAW_SDHC
@@ -720,7 +692,7 @@ uint8_t sd_raw_write(offset_t offset, const uint8_t* buffer, uintptr_t length)
         if(sd_raw_send_command(CMD_WRITE_SINGLE_BLOCK, block_address))
 #endif
         {
-            unselect_card();
+            SPI_CS_High();
             return 0;
         }
 
@@ -741,7 +713,7 @@ uint8_t sd_raw_write(offset_t offset, const uint8_t* buffer, uintptr_t length)
         sd_raw_rec_byte();
 
         /* deaddress card */
-        unselect_card();
+        SPI_CS_High();
 
         buffer += write_length;
         offset += write_length;
@@ -855,12 +827,12 @@ uint8_t sd_raw_get_info(struct sd_raw_info* info)
 
     memset(info, 0, sizeof(*info));
 
-    select_card();
+    SPI_CS_Low();
 
     /* read cid register */
     if(sd_raw_send_command(CMD_SEND_CID, 0))
     {
-        unselect_card();
+        SPI_CS_High();
         return 0;
     }
     while(sd_raw_rec_byte() != 0xfe);
@@ -914,7 +886,7 @@ uint8_t sd_raw_get_info(struct sd_raw_info* info)
     uint8_t csd_structure = 0;
     if(sd_raw_send_command(CMD_SEND_CSD, 0))
     {
-        unselect_card();
+        SPI_CS_High();
         return 0;
     }
     while(sd_raw_rec_byte() != 0xfe);
@@ -991,7 +963,7 @@ uint8_t sd_raw_get_info(struct sd_raw_info* info)
         }
     }
 
-    unselect_card();
+    SPI_CS_High();
 
     return 1;
 }
