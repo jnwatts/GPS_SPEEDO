@@ -30,10 +30,10 @@
 
 #elif defined(TARGET_KL25Z)
 
-#define GPS_TX  PTA1  // D0
-#define GPS_RX  PTA2  // D1
-#define GPS_PPS PTD4  // D2
-#define GPS_EN  PTA12 // D3
+#define GPS_TX  PTE22 // -- (Rx  green)  J10.5
+#define GPS_RX  PTE23 // -- (Tx  blue)   J10.7
+#define GPS_PPS PTE21 // -- (Pps white)  J10.3
+#define GPS_EN  PTE20 // -- (En  yellow) J10.1  1
 
 #define TM1650_DIO PTE0 // D14 (I2C_SDA)
 #define TM1650_CLK PTE1 // D15 (I2C_SCL)
