@@ -156,32 +156,48 @@ void show_odom(void)
     float fract, whole;
     const char *fmt;
 
+    switch (display_mode) {
+        case MODE_SHOW_ODOM_HI:
+            // Given 123456.78, show 12
+            o = ODOM_ENGINE;
+            break;
+        case MODE_SHOW_ODOM_LO:
+            // Given 123456.78, show 3456
+            o = ODOM_ENGINE;
+            break;
+        case MODE_SHOW_TRIP_A:
+            // Given 123456.78, show 456.7
+            o = ODOM_TRIP_A;
+            break;
+        case MODE_SHOW_TRIP_B:
+            // Given 123456.78, show 456.7
+            o = ODOM_TRIP_B;
+            break;
+        default:
+            return;
+    }
+
     dist = odom.get_odom(o);
     fract = modff(dist, &whole);
 
     switch (display_mode) {
         case MODE_SHOW_ODOM_HI:
             // Given 123456.78, show 12
-            o = ODOM_ENGINE;
-// #//error Need a way to specify whole field size and fractional field size. Can I use %*d? Yes, yes I can.
             dist = (int)(whole * 0.0001) % 10000;
             fmt = "%4.0f";
             break;
         case MODE_SHOW_ODOM_LO:
             // Given 123456.78, show 3456
-            o = ODOM_ENGINE;
             dist = (int)whole % 10000;
             fmt = "%4.0f";
             break;
         case MODE_SHOW_TRIP_A:
             // Given 123456.78, show 456.7
-            o = ODOM_TRIP_A;
             dist = ((int)whole % 1000) + fract;
             fmt = "%3.1f";
             break;
         case MODE_SHOW_TRIP_B:
             // Given 123456.78, show 456.7
-            o = ODOM_TRIP_B;
             dist = ((int)whole % 1000) + fract;
             fmt = "%3.1f";
             break;
