@@ -145,6 +145,7 @@ void show_speed(void)
         tm1650.puts(buf);
         set_color(COLOR_GREEN, 0.500);
     } else {
+        tm1650.puts("----");
         set_color(COLOR_ORANGE, 0.500);
     }
 }
