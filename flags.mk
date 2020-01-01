@@ -179,6 +179,7 @@ ASM_FLAGS += -mthumb
 
 # -Wl,--wrap,main -Wl,--wrap,_malloc_r -Wl,--wrap,_free_r -Wl,--wrap,_realloc_r -Wl,--wrap,_memalign_r -Wl,--wrap,_calloc_r -Wl,--wrap,exit -Wl,--wrap,atexit
 LD_FLAGS :=-Wl,--gc-sections -Wl,-n --specs=nano.specs -mcpu=cortex-m0plus -mthumb  -Xlinker -Map=$(PROJECT).map
+LD_FLAGS += -Wl,-u,_printf_float
 LD_SYS_LIBS :=-Wl,--start-group -lstdc++ -lsupc++ -lm -lc -lgcc -lnosys -Wl,--end-group
 
 # Tools and Flags
