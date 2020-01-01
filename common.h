@@ -17,8 +17,6 @@ enum display_mode_t {
     MODE_SHOW_SPEED,
     MODE_SHOW_ODOM_LO,
     MODE_SHOW_ODOM_HI,
-    MODE_SET_ODOM_LO,
-    MODE_SET_ODOM_HI,
     MODE_SHOW_TRIP_A,
     MODE_SHOW_TRIP_B,
 };

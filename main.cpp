@@ -5,40 +5,41 @@
 #include "common.h"
 #include "leds.h"
 #include "odom.h"
+#include "fs.h"
 #include "tm1650.h"
 #include "pins.h"
 
-void display_test(void);
-void show_error(int err);
+#define DEBUG_GPS_INPUT
 
+#include "main.h"
+
+const int DISPLAY_MAX_TIME_MS = 100;
+const char *ODOM_BIN = "odom.bin";
+const double ODOM_MIN_DISTANCE_THRESHOLD_M = 1.0;
+const double ODOM_MOVING_DISTANCE_THRESHOLD_M = 2.0;
+const double ODOM_SAVE_DISTANCE_THRESHOLD_M = 50 * METERS_PER_MILE;
+
+TinyGPS gps;
+Serial gps_uart(GPS_TX, GPS_RX); //TODO: PPS? EN?
+DigitalOut gps_en(GPS_EN);
+Odom odom;
+FS fs;
+TM1650 tm1650(TM1650_DIO, TM1650_CLK);
+Timer display_timer;
+
+volatile bool gps_changed = false;
 int display_mode = MODE_SHOW_SPEED;
-typedef void (*mode_func_t)(void);
-void show_speed(void);
-void show_odom(void);
-void set_odom(void);
 mode_func_t mode_func[] = {
     show_speed,
     show_odom,
     show_odom,
-    set_odom,
-    set_odom,
     show_odom,
     show_odom,
 };
-
-TinyGPS gps;
-Odom odom;
-TM1650 tm1650(TM1650_DIO, TM1650_CLK);
-volatile bool gps_changed = false;
-Timer display_timer;
-const int DISPLAY_MAX_TIME_MS = 100;
-
-#define HAVE_GPS
-#define DEBUG_GPS_INPUT
-
-#ifdef HAVE_GPS
-Serial gps_uart(GPS_TX, GPS_RX); //TODO: PPS? EN?
-DigitalOut gps_en(GPS_EN);
+bool have_position = false;
+long prev_lat, prev_lon;
+double last_save_odom = 0.0;
+bool moving = false;
 
 void uart_cb(void)
 {
@@ -49,7 +50,6 @@ void uart_cb(void)
     if (gps.encode(c))
         gps_changed = true;
 }
-#endif
 
 int main()
 {
@@ -57,44 +57,34 @@ int main()
 
     startMillis();
 
+    // Let GPS start warming up as soon as possible
+    gps_en = 0;
+    gps_uart.baud(9600);
+    gps_uart.attach(uart_cb);
+    gps_en = 1;
+
     tm1650.init();
-    tm1650.setBrightness(8);
+    tm1650.setBrightness(3);
     tm1650.setDisplay(true);
 
     display_test();
 
     display_timer.start();
 
-#ifdef HAVE_GPS
-    gps_en = 0;
-    gps_uart.baud(9600);
-    gps_uart.attach(uart_cb);
-#endif
-
-   /* TODO:
-   * (Other than testing)
-   * - Integrate GPS
-   * - Increase baud rate for gps (check datasheet)
-   * - Use "keys" to get to move through display modes
-   */
-    if (!odom.load()) {
+    if (!fs.init())
         show_error(ERR_DISK);
-    }
 
-#ifdef HAVE_GPS
-    gps_en = 1;
-#endif
+    load_odom();
+
+    /* TODO:
+    * (Other than testing)
+    * - Increase baud rate for gps (check datasheet)
+    * - Use "keys" to get to move through display modes
+    */
 
     while (true) {
         if (gps_changed) {
-            long lat, lon;
-            unsigned long age;
-
-            gps.get_position(&lat, &lon, &age);
-            if (gps.gps_good_data())
-                odom.update_position(lat, lon);
-            else
-                odom.invalidate_position();
+            update_position();
 
             mode_func[display_mode]();
 
@@ -229,14 +219,73 @@ void show_odom(void)
     tm1650.puts(buf);
 }
 
-void set_odom(void)
+int load_odom(void)
 {
+    double o[ODOM_COUNT];
+
+    if (!fs.read_file(ODOM_BIN, &o, sizeof(o)))
+        return 0;
+
+    last_save_odom = o[ODOM_ENGINE];
+
+    for (int i = 0; i < ODOM_COUNT; i++)
+        odom.set_odom((odom_t)i, o[i]);
+
+    return 0;
 }
 
-void debug_int(int num, float delay)
+int save_odom(void)
 {
-    char buf[5];
-    snprintf(buf, sizeof(buf), "D %2d", num);
-    tm1650.puts(buf);
-    wait(delay);
+    double o[ODOM_COUNT];
+
+    for (int i = 0; i < ODOM_COUNT; i++)
+        o[i] = odom.get_odom((odom_t)i);
+
+    last_save_odom = o[ODOM_ENGINE];
+
+    return fs.write_file(ODOM_BIN, &o, sizeof(o));
+}
+
+void update_position(void)
+{
+    long lat, lon;
+    unsigned long age;
+    double dist_m;
+
+    if (!gps.gps_good_data()) {
+        have_position = false;
+        return;
+    }
+
+    gps.get_position(&lat, &lon, &age);
+    if (!have_position) {
+        prev_lat = lat;
+        prev_lon = lon;
+        return;
+    }
+
+    if (prev_lat == lat && prev_lon == lon)
+        return;
+
+    dist_m = TinyGPS::distance_between(prev_lat, prev_lon, lat, lon);
+
+    prev_lat = lat;
+    prev_lon = lon;
+
+    if (moving) {
+        if (dist_m < ODOM_MIN_DISTANCE_THRESHOLD_M) {
+            save_odom();
+            moving = false;
+        }
+    } else {
+        if (dist_m > ODOM_MOVING_DISTANCE_THRESHOLD_M) {
+            moving = true;
+        }
+    }
+
+    if (moving) {
+        odom.increment(dist_m);
+        if (odom.get_odom(ODOM_ENGINE) - last_save_odom > ODOM_SAVE_DISTANCE_THRESHOLD_M)
+            save_odom();
+    }
 }
