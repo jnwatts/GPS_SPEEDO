@@ -15,8 +15,8 @@
 
 const int DISPLAY_MAX_TIME_MS = 100;
 const char *ODOM_BIN = "odom.bin";
-const double ODOM_MIN_SPEED_THRESHOLD_MPH = 1;
-const double ODOM_MOVING_DISTANCE_THRESHOLD_M = 5.0;
+const double ODOM_MOVING_LOWER_BOUND_MPH = 1.0;
+const double ODOM_MOVING_UPPER_BOUND_MPH = 6.0;
 const double ODOM_SAVE_DISTANCE_THRESHOLD_M = 50 * METERS_PER_MILE;
 const float MIN_TIME_BETWEEN_SAVE_S = 10;
 const float MAX_TIME_BETWEEN_SAVE_S = 10 * 60; // 10 minutes
@@ -395,12 +395,12 @@ void update_position(void)
     prev_lon = lon;
 
     if (moving) {
-        if (speed_mph < ODOM_MIN_SPEED_THRESHOLD_MPH) {
+        if (speed_mph < ODOM_MOVING_LOWER_BOUND_MPH) {
             save_odom();
             moving = false;
         }
     } else {
-        if (dist_m > ODOM_MOVING_DISTANCE_THRESHOLD_M) {
+        if (speed_mph > ODOM_MOVING_UPPER_BOUND_MPH) {
             moving = true;
         }
     }
