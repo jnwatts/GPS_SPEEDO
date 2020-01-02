@@ -15,7 +15,7 @@
 
 const int DISPLAY_MAX_TIME_MS = 100;
 const char *ODOM_BIN = "odom.bin";
-const double ODOM_MIN_DISTANCE_THRESHOLD_M = 1.0 / 3600.0 * METERS_PER_MILE / 10; // 1 mi / 3600 s / 10 hz * METERS_PER_MILE = 0.044704 m
+const double ODOM_MIN_DISTANCE_THRESHOLD_M = 2.0/*mih*/ / 3600.0/*s*/ * METERS_PER_MILE / 10/*hz*/; // 1 mi / 3600 s / 10 hz * METERS_PER_MILE = 0.044704 m
 const double ODOM_MOVING_DISTANCE_THRESHOLD_M = 2.0;
 const double ODOM_SAVE_DISTANCE_THRESHOLD_M = 50 * METERS_PER_MILE;
 
