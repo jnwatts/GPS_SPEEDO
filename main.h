@@ -8,6 +8,8 @@ void display_test(void);
 void show_error(int err);
 void show_speed(void);
 void show_odom(void);
+void show_sats(void);
+void show_dop(void);
 void show_noop(void);
 void show_overlay(const char *msg, float delay = 0.5);
 void hide_overlay(void);

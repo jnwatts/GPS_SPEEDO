@@ -36,6 +36,9 @@ const mode_func_t mode_func[] = {
     show_odom,
     show_odom,
     show_odom,
+    show_sats,
+    show_dop,
+    show_dop,
     show_noop,
 };
 const char *mode_label[] = {
@@ -44,12 +47,17 @@ const char *mode_label[] = {
     "HI  ",
     "A   ",
     "B   ",
+    "SATS",
+    "HDOP",
+    "PDOP",
     "DBG ",
 };
 bool have_position = false;
 double prev_lat, prev_lon;
 double last_save_odom = 0.0;
 bool moving = false;
+int sats_used, sats_inview;
+int pdop, hdop;
 bool overlay_visible = false;
 
 void uart_cb(void)
@@ -242,6 +250,43 @@ void show_odom(void)
         snprintf(buf, sizeof(buf), "%*d", fract_w, (int)(fract * fract_mod) % fract_mod);
     else
         snprintf(buf, sizeof(buf), "%*d", whole_w, (int)(whole) % whole_mod);
+    tm1650.puts(buf);
+}
+
+void show_sats(void)
+{
+    int new_sats_used, new_sats_inview;
+    new_sats_used = gps.satsused();
+    new_sats_inview = gps.satsinview();
+
+    if (new_sats_used)
+        sats_used = new_sats_used;
+    if (new_sats_inview)
+        sats_inview = new_sats_inview;
+
+    char buf[6];
+    snprintf(buf, sizeof(buf), "%02d.%02d", sats_used, sats_inview);
+    tm1650.puts(buf);
+}
+
+void show_dop(void)
+{
+    int new_hdop, new_pdop;
+    new_hdop = gps.hdop();
+    new_pdop = gps.pdop();
+    if (new_hdop)
+        hdop = new_hdop;
+    if (new_pdop)
+        pdop = new_pdop;
+
+    int dop;
+    if (display_mode == MODE_SHOW_HDOP)
+        dop = hdop;
+    else
+        dop = pdop;
+
+    char buf[6];
+    snprintf(buf, sizeof(buf), "%04d", dop % 10000);
     tm1650.puts(buf);
 }
 
