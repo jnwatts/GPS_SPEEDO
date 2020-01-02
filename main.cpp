@@ -47,7 +47,7 @@ const char *mode_label[] = {
     "DBG ",
 };
 bool have_position = false;
-long prev_lat, prev_lon;
+double prev_lat, prev_lon;
 double last_save_odom = 0.0;
 bool moving = false;
 bool overlay_visible = false;
@@ -158,7 +158,7 @@ void show_error(int error)
 void show_speed(void)
 {
     if (gps.gps_good_data()) {
-        float speed = gps.f_speed_mph();
+        double speed = gps.d_speed_mph();
         char buf[6];
         if (speed > 999.9)
             speed = 999.9; // Let's... hope not.
@@ -174,8 +174,8 @@ void show_speed(void)
 void show_odom(void)
 {
     odom_t o;
-    float dist;
-    float whole, fract;
+    double dist;
+    double whole, fract;
     int whole_w, fract_w;
 
     switch (display_mode) {
@@ -200,7 +200,7 @@ void show_odom(void)
     }
 
     dist = odom.get_odom(o);
-    fract = modff(dist, &whole);
+    fract = modf(dist, &whole);
 
     switch (display_mode) {
         case MODE_SHOW_ODOM_HI:
@@ -284,7 +284,7 @@ int save_odom(void)
 
 void update_position(void)
 {
-    float lat, lon;
+    double lat, lon;
     unsigned long age;
     double dist_m;
 
@@ -293,7 +293,7 @@ void update_position(void)
         return;
     }
 
-    gps.f_get_position(&lat, &lon, &age);
+    gps.d_get_position(&lat, &lon, &age);
     if (!have_position) {
         prev_lat = lat;
         prev_lon = lon;

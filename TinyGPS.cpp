@@ -92,9 +92,9 @@ TinyGPS::TinyGPS()
 
 #define TWO_PI M_PI * 2
 
-inline float radians(float degrees) { return M_PI * (degrees / 180); }
-inline float degrees(float radians) { return (radians * 180) / M_PI; }
-inline float sq(float f)            { return f * f; }
+inline double radians(double degrees) { return M_PI * (degrees / 180); }
+inline double degrees(double radians) { return (radians * 180) / M_PI; }
+inline double sq(double f)            { return f * f; }
 #endif /* ARDUINO */
 
 //
@@ -410,42 +410,42 @@ int TinyGPS::gpsstrcmp(const char *str1, const char *str2)
 }
 
 /* static */
-float TinyGPS::distance_between (float lat1, float long1, float lat2, float long2)
+double TinyGPS::distance_between (double lat1, double long1, double lat2, double long2)
 {
   // returns distance in meters between two positions, both specified
   // as signed decimal-degrees latitude and longitude. Uses great-circle
   // distance computation for hypothetical sphere of radius 6372795 meters.
   // Because Earth is no exact sphere, rounding errors may be up to 0.5%.
   // Courtesy of Maarten Lamers
-  float delta = radians(long1-long2);
-  float sdlong = sin(delta);
-  float cdlong = cos(delta);
+  double delta = radians(long1-long2);
+  double sdlong = sin(delta);
+  double cdlong = cos(delta);
   lat1 = radians(lat1);
   lat2 = radians(lat2);
-  float slat1 = sin(lat1);
-  float clat1 = cos(lat1);
-  float slat2 = sin(lat2);
-  float clat2 = cos(lat2);
+  double slat1 = sin(lat1);
+  double clat1 = cos(lat1);
+  double slat2 = sin(lat2);
+  double clat2 = cos(lat2);
   delta = (clat1 * slat2) - (slat1 * clat2 * cdlong);
   delta = sq(delta);
   delta += sq(clat2 * sdlong);
   delta = sqrt(delta);
-  float denom = (slat1 * slat2) + (clat1 * clat2 * cdlong);
+  double denom = (slat1 * slat2) + (clat1 * clat2 * cdlong);
   delta = atan2(delta, denom);
   return delta * 6372795;
 }
 
-float TinyGPS::course_to (float lat1, float long1, float lat2, float long2)
+double TinyGPS::course_to (double lat1, double long1, double lat2, double long2)
 {
   // returns course in degrees (North=0, West=270) from position 1 to position 2,
   // both specified as signed decimal-degrees latitude and longitude.
   // Because Earth is no exact sphere, calculated course may be off by a tiny fraction.
   // Courtesy of Maarten Lamers
-  float dlon = radians(long2-long1);
+  double dlon = radians(long2-long1);
   lat1 = radians(lat1);
   lat2 = radians(lat2);
-  float a1 = sin(dlon) * cos(lat2);
-  float a2 = sin(lat1) * cos(lat2) * cos(dlon);
+  double a1 = sin(dlon) * cos(lat2);
+  double a2 = sin(lat1) * cos(lat2) * cos(dlon);
   a2 = cos(lat1) * sin(lat2) - a2;
   a2 = atan2(a1, a2);
   if (a2 < 0.0)
@@ -455,7 +455,7 @@ float TinyGPS::course_to (float lat1, float long1, float lat2, float long2)
   return degrees(a2);
 }
 
-const char *TinyGPS::cardinal (float course)
+const char *TinyGPS::cardinal (double course)
 {
   static const char* directions[] = {"N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"};
 
@@ -530,7 +530,7 @@ void TinyGPS::get_datetime(unsigned long *date, unsigned long *timeval, unsigned
 }
 #endif /* ARDUINO */
 
-void TinyGPS::f_get_position(float *latitude, float *longitude, unsigned long *fix_age)
+void TinyGPS::d_get_position(double *latitude, double *longitude, unsigned long *fix_age)
 {
   long lat, lon;
   get_position(&lat, &lon, fix_age);
@@ -571,12 +571,12 @@ void TinyGPS::crack_datetime(int *year, byte *month, byte *day,
   if (minute) *minute = t1 - (t2 * 100);
 }
 
-float TinyGPS::f_altitude()
+double TinyGPS::d_altitude()
 {
   return _altitude == GPS_INVALID_ALTITUDE ? GPS_INVALID_F_ALTITUDE : _altitude / 100.0;
 }
 
-float TinyGPS::f_course()
+double TinyGPS::d_course()
 {
 #ifndef _GPS_TIME_ONLY
   return _course == GPS_INVALID_ANGLE ? GPS_INVALID_F_ANGLE : _course / 100.0;
@@ -585,7 +585,7 @@ float TinyGPS::f_course()
 #endif /* _GPS_TIME_ONLY */
 }
 
-float TinyGPS::f_speed_knots()
+double TinyGPS::d_speed_knots()
 {
 #ifndef _GPS_TIME_ONLY
   return _speed == GPS_INVALID_SPEED ? GPS_INVALID_F_SPEED : _speed / 100.0;
@@ -594,36 +594,36 @@ float TinyGPS::f_speed_knots()
 #endif /* _GPS_TIME_ONLY */
 }
 
-float TinyGPS::f_speed_mph()
+double TinyGPS::d_speed_mph()
 {
 #ifndef _GPS_TIME_ONLY
-  float sk = f_speed_knots();
+  double sk = d_speed_knots();
   return sk == GPS_INVALID_F_SPEED ? GPS_INVALID_F_SPEED : _GPS_MPH_PER_KNOT * sk;
 #else
   return GPS_INVALID_F_SPEED;
 #endif /* _GPS_TIME_ONLY */
 }
 
-float TinyGPS::f_speed_mps()
+double TinyGPS::d_speed_mps()
 {
 #ifndef _GPS_TIME_ONLY
-  float sk = f_speed_knots();
+  double sk = d_speed_knots();
   return sk == GPS_INVALID_F_SPEED ? GPS_INVALID_F_SPEED : _GPS_MPS_PER_KNOT * sk;
 #else
   return GPS_INVALID_F_SPEED;
 #endif /* _GPS_TIME_ONLY */
 }
 
-float TinyGPS::f_speed_kmph()
+double TinyGPS::d_speed_kmph()
 {
 #ifndef _GPS_TIME_ONLY
-  float sk = f_speed_knots();
+  double sk = d_speed_knots();
   return sk == GPS_INVALID_F_SPEED ? GPS_INVALID_F_SPEED : _GPS_KMPH_PER_KNOT * sk;
 #else
   return GPS_INVALID_F_SPEED;
 #endif /* _GPS_TIME_ONLY */
 }
 
-const float TinyGPS::GPS_INVALID_F_ANGLE = 1000.0;
-const float TinyGPS::GPS_INVALID_F_ALTITUDE = 1000000.0;
-const float TinyGPS::GPS_INVALID_F_SPEED = -1.0;
+const double TinyGPS::GPS_INVALID_F_ANGLE = 1000.0;
+const double TinyGPS::GPS_INVALID_F_ALTITUDE = 1000000.0;
+const double TinyGPS::GPS_INVALID_F_SPEED = -1.0;

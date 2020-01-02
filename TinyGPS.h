@@ -73,7 +73,7 @@ public:
       GPS_FIX_3D     = 3
   };
 
-  static const float GPS_INVALID_F_ANGLE, GPS_INVALID_F_ALTITUDE, GPS_INVALID_F_SPEED;
+  static const double GPS_INVALID_F_ANGLE, GPS_INVALID_F_ALTITUDE, GPS_INVALID_F_SPEED;
 
   TinyGPS();
   bool encode(char c); // process one character received from GPS
@@ -140,7 +140,7 @@ public:
   inline void set_gps_good_data(bool value) { _gps_data_good = value; }
 #endif /* DEBUG_GPSTIME */
 
-  void f_get_position(float *latitude, float *longitude, unsigned long *fix_age = 0);
+  void d_get_position(double *latitude, double *longitude, unsigned long *fix_age = 0);
   void crack_datetime(int *year, byte *month, byte *day, 
   byte *hour, byte *minute, byte *second, byte *hundredths = 0, unsigned long *fix_age = 0);
   inline void  resetGPSstatusVars(void) {
@@ -153,18 +153,18 @@ public:
     _pdop       = GPS_INVALID_PDOP;
     _altitude   = GPS_INVALID_ALTITUDE;
   }
-  float f_altitude();
-  float f_course();
-  float f_speed_knots();
-  float f_speed_mph();
-  float f_speed_mps();
-  float f_speed_kmph();
+  double d_altitude();
+  double d_course();
+  double d_speed_knots();
+  double d_speed_mph();
+  double d_speed_mps();
+  double d_speed_kmph();
 
   static int library_version() { return _GPS_VERSION; }
 
-  static float distance_between (float lat1, float long1, float lat2, float long2);
-  static float course_to (float lat1, float long1, float lat2, float long2);
-  static const char *cardinal(float course);
+  static double distance_between (double lat1, double long1, double lat2, double long2);
+  static double course_to (double lat1, double long1, double lat2, double long2);
+  static const char *cardinal(double course);
 
 #ifndef _GPS_NO_STATS
   void stats(unsigned long *chars, unsigned short *good_sentences, unsigned short *failed_cs);
@@ -232,7 +232,7 @@ private:
 #undef char
 #undef long
 #undef byte
-#undef float
+#undef double
 #undef abs
 #undef round 
 #endif
