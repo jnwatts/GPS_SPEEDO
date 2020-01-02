@@ -290,6 +290,8 @@ int save_odom(void)
 
     last_save_odom = o[ODOM_ENGINE];
 
+    show_overlay("SAVE", 0.5);
+
     return fs.write_file(ODOM_BIN, &o, sizeof(o));
 }
 
