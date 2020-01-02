@@ -1,5 +1,14 @@
 #pragma once
 
+enum input_key_t {
+    KEY_INVALID = 0,
+    KEY_DOWN,
+    KEY_LEFT,
+    KEY_UP,
+    KEY_RIGHT,
+    KEY_SELECT,
+};
+
 enum error_t {
     ERR_DISK = 0x10,
 };

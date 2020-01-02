@@ -16,13 +16,15 @@
 #include <stdbool.h>
 #include <mbed.h>
 
+#include "common.h"
+
 #define TM1650_DEF_BRT      3
 #define TM1650_COLUMNS      4
 
 class TM1650
 {
 public:
-	TM1650(PinName dio, PinName clk);
+	TM1650(PinName dio, PinName clk, PinName ain);
 
 	void init(void);
 
@@ -38,6 +40,8 @@ public:
 	int column(void) const { return this->_column; }
 	int columns(void) const { return TM1650_COLUMNS; }
 
+	input_key_t getKey(void);
+
 private:
 	void _bufferChar(char c);
 
@@ -50,9 +54,12 @@ private:
 	void _stop(void);
 	void _write(uint8_t data);
 
+	Timer _keyTimer;
 	DigitalInOut _dio;
 	DigitalOut _clk;
+	AnalogIn _ain;
 
+	input_key_t _lastKey;
 	int _column;
 	uint8_t _brightness;
 	uint8_t _segment;

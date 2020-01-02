@@ -11,6 +11,14 @@
 
 #include "tm1650.h"
 
+#warning SELECT key is broken until R1 is replaced with 4kOhm
+const int THRESHOLD_SELECT = -1;
+const int THRESHOLD_RIGHT = 100;
+const int THRESHOLD_UP = 70;
+const int THRESHOLD_LEFT = 40;
+const int THRESHOLD_DOWN = 15;
+const int KEY_VALID_TIME = 1000;
+
 #include "ascii_7seg.h"
 #define CHARACTERS SevenSegmentASCII
 static const int NUM_CHARACTERS = sizeof(CHARACTERS) / sizeof(*CHARACTERS);
@@ -43,9 +51,10 @@ static const uint8_t DOT = 0x80;
 #define TM1650_DEF_BRT      3
 #define TM1650_COLUMNS      4
 
-TM1650::TM1650(PinName dio, PinName clk) :
+TM1650::TM1650(PinName dio, PinName clk, PinName ain) :
 	_dio(dio),
 	_clk(clk),
+	_ain(ain),
 	_column(0)
 {
 
@@ -116,6 +125,41 @@ void TM1650::locate(int column)
 		column = TM1650_COLUMNS - 1;
 
 	this->_column = column;
+}
+
+input_key_t TM1650::getKey(void)
+{
+	input_key_t key = KEY_INVALID;
+
+	int value = (int)(this->_ain.read() * 100.0);
+	if (value < THRESHOLD_DOWN)
+		key = KEY_DOWN;
+	else if (value < THRESHOLD_LEFT)
+		key = KEY_LEFT;
+	else if (value < THRESHOLD_UP)
+		key = KEY_UP;
+	else if (value < THRESHOLD_RIGHT)
+		key = KEY_RIGHT;
+	else if (value < THRESHOLD_SELECT)
+		key = KEY_SELECT;
+	else
+		key = KEY_INVALID;
+
+	if (key == KEY_INVALID || key != this->_lastKey) {
+		this->_keyTimer.reset();
+		if (key != KEY_INVALID)
+			this->_keyTimer.start();
+		this->_lastKey = key;
+		return KEY_INVALID;
+	}
+
+	if (this->_keyTimer.read_us() >= KEY_VALID_TIME) {
+		this->_keyTimer.stop();
+		this->_keyTimer.reset();
+		return key;
+	}
+
+	return KEY_INVALID;
 }
 
 void TM1650::_bufferChar(char c)
