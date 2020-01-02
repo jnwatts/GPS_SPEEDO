@@ -328,7 +328,6 @@ void update_position(void)
 
 void handle_key(input_key_t key)
 {
-printf("KEY %d\n", key);
     switch (key) {
     case KEY_DOWN:
         if (display_mode < MODE_SHOW_LAST)
