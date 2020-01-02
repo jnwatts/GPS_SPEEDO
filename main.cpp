@@ -26,6 +26,7 @@ Odom odom;
 FS fs;
 TM1650 tm1650(TM1650_DIO, TM1650_CLK);
 Timer display_timer;
+Timeout overlay_timer;
 
 volatile bool gps_changed = false;
 int display_mode = MODE_SHOW_SPEED;
@@ -40,6 +41,7 @@ bool have_position = false;
 long prev_lat, prev_lon;
 double last_save_odom = 0.0;
 bool moving = false;
+bool overlay_visible = false;
 
 void uart_cb(void)
 {
@@ -85,12 +87,10 @@ int main()
     while (true) {
         if (gps_changed) {
             update_position();
-
-            mode_func[display_mode]();
-
             gps_changed = false;
-            display_timer.reset();
-        } else if (display_timer.read_ms() >= DISPLAY_MAX_TIME_MS) {
+        }
+
+        if (!overlay_visible && display_timer.read_ms() >= DISPLAY_MAX_TIME_MS) {
             mode_func[display_mode]();
             display_timer.reset();
         }
@@ -217,6 +217,18 @@ void show_odom(void)
     char buf[16];
     snprintf(buf, sizeof(buf), fmt, dist);
     tm1650.puts(buf);
+}
+
+void show_overlay(const char *msg, float delay)
+{
+    tm1650.puts(msg);
+    overlay_visible = true;
+    overlay_timer.attach(hide_overlay, delay);
+}
+
+void hide_overlay(void)
+{
+    overlay_visible = false;
 }
 
 int load_odom(void)
