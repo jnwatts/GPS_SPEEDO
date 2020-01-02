@@ -9,7 +9,7 @@
 #include "tm1650.h"
 #include "pins.h"
 
-#define DEBUG_GPS_INPUT
+// #define DEBUG_GPS_INPUT
 
 #include "main.h"
 
