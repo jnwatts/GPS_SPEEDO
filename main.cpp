@@ -15,8 +15,8 @@
 
 const int DISPLAY_MAX_TIME_MS = 100;
 const char *ODOM_BIN = "odom.bin";
-const double ODOM_MIN_SPEED_THRESHOLD_MPH = 5;
-const double ODOM_MOVING_DISTANCE_THRESHOLD_M = 2.0;
+const double ODOM_MIN_SPEED_THRESHOLD_MPH = 1;
+const double ODOM_MOVING_DISTANCE_THRESHOLD_M = 5.0;
 const double ODOM_SAVE_DISTANCE_THRESHOLD_M = 50 * METERS_PER_MILE;
 
 TinyGPS gps;
