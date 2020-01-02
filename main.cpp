@@ -284,7 +284,7 @@ int save_odom(void)
 
 void update_position(void)
 {
-    long lat, lon;
+    float lat, lon;
     unsigned long age;
     double dist_m;
 
@@ -293,7 +293,7 @@ void update_position(void)
         return;
     }
 
-    gps.get_position(&lat, &lon, &age);
+    gps.f_get_position(&lat, &lon, &age);
     if (!have_position) {
         prev_lat = lat;
         prev_lon = lon;
@@ -303,6 +303,7 @@ void update_position(void)
     if (prev_lat == lat && prev_lon == lon)
         return;
 
+// printf    ("%s %d %f %f\n", __func__, __LINE__, lat, lon);
     dist_m = TinyGPS::distance_between(prev_lat, prev_lon, lat, lon);
 
     prev_lat = lat;
