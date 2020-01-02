@@ -206,6 +206,10 @@ void show_odom(void)
         case MODE_SHOW_ODOM_HI:
             // Given 123456.78, show 12
             whole *= 0.0001;
+            if (whole <= 0.0) {
+                tm1650.clear();
+                return;
+            }
             fract_w = 0;
             break;
         case MODE_SHOW_ODOM_LO:
