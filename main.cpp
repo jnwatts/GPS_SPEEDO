@@ -266,8 +266,12 @@ int load_odom(void)
 {
     double o[ODOM_COUNT];
 
-    if (!fs.read_file(ODOM_BIN, &o, sizeof(o)))
+    if (!fs.read_file(ODOM_BIN, &o, sizeof(o))) {
+        show_overlay("DISK", 1.0);
+        wait(1.0);
+        show_overlay("FAIL", 1.0);
         return 0;
+    }
 
     last_save_odom = o[ODOM_ENGINE];
 
