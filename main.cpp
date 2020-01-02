@@ -24,18 +24,27 @@ Serial gps_uart(GPS_TX, GPS_RX); //TODO: PPS? EN?
 DigitalOut gps_en(GPS_EN);
 Odom odom;
 FS fs;
-TM1650 tm1650(TM1650_DIO, TM1650_CLK);
+TM1650 tm1650(TM1650_DIO, TM1650_CLK, TM1650_AIN);
 Timer display_timer;
 Timeout overlay_timer;
 
 volatile bool gps_changed = false;
 int display_mode = MODE_SHOW_SPEED;
-mode_func_t mode_func[] = {
+const mode_func_t mode_func[] = {
     show_speed,
     show_odom,
     show_odom,
     show_odom,
     show_odom,
+    show_noop,
+};
+const char *mode_label[] = {
+    "SPD ",
+    "LO  ",
+    "HI  ",
+    "A   ",
+    "B   ",
+    "DBG ",
 };
 bool have_position = false;
 long prev_lat, prev_lon;
@@ -94,6 +103,10 @@ int main()
             mode_func[display_mode]();
             display_timer.reset();
         }
+
+        input_key_t key = tm1650.getKey();
+        if (key != KEY_INVALID)
+            handle_key(key);
     }
 }
 
@@ -219,6 +232,11 @@ void show_odom(void)
     tm1650.puts(buf);
 }
 
+void show_noop(void)
+{
+    return;
+}
+
 void show_overlay(const char *msg, float delay)
 {
     tm1650.puts(msg);
@@ -300,4 +318,32 @@ void update_position(void)
         if (odom.get_odom(ODOM_ENGINE) - last_save_odom > ODOM_SAVE_DISTANCE_THRESHOLD_M)
             save_odom();
     }
+}
+
+void handle_key(input_key_t key)
+{
+printf("KEY %d\n", key);
+    switch (key) {
+    case KEY_DOWN:
+        if (display_mode < MODE_SHOW_LAST)
+            display_mode++;
+        show_overlay(mode_label[display_mode], 1.0);
+        break;
+    case KEY_UP:
+        if (display_mode > MODE_SHOW_FIRST)
+            display_mode--;
+        show_overlay(mode_label[display_mode], 1.0);
+        break;
+    case KEY_LEFT:
+        if (display_mode == MODE_SHOW_TRIP_A)
+            odom.reset_odom(ODOM_TRIP_A);
+        else if (display_mode == MODE_SHOW_TRIP_B)
+            odom.reset_odom(ODOM_TRIP_B);
+        save_odom();
+        break;
+    default:
+        break;
+    }
+
+    return;
 }

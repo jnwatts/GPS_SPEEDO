@@ -28,6 +28,10 @@ enum display_mode_t {
     MODE_SHOW_ODOM_HI,
     MODE_SHOW_TRIP_A,
     MODE_SHOW_TRIP_B,
+    MODE_SHOW_DEBUG,
+
+    MODE_SHOW_FIRST = MODE_SHOW_SPEED,
+    MODE_SHOW_LAST = MODE_SHOW_TRIP_B,
 };
 
 enum odom_t {
