@@ -15,7 +15,7 @@
 
 const int DISPLAY_MAX_TIME_MS = 100;
 const char *ODOM_BIN = "odom.bin";
-const double ODOM_MIN_DISTANCE_THRESHOLD_M = 2.0/*mih*/ / 3600.0/*s*/ * METERS_PER_MILE / 10/*hz*/; // 1 mi / 3600 s / 10 hz * METERS_PER_MILE = 0.044704 m
+const double ODOM_MIN_SPEED_THRESHOLD_MPH = 5;
 const double ODOM_MOVING_DISTANCE_THRESHOLD_M = 2.0;
 const double ODOM_SAVE_DISTANCE_THRESHOLD_M = 50 * METERS_PER_MILE;
 
@@ -359,6 +359,7 @@ void update_position(void)
     double lat, lon;
     unsigned long age;
     double dist_m;
+    double speed_mph;
 
     if (!gps.gps_good_data()) {
         have_position = false;
@@ -377,12 +378,13 @@ void update_position(void)
         return;
 
     dist_m = TinyGPS::distance_between(prev_lat, prev_lon, lat, lon);
+    speed_mph = gps.d_speed_mph();
 
     prev_lat = lat;
     prev_lon = lon;
 
     if (moving) {
-        if (dist_m < ODOM_MIN_DISTANCE_THRESHOLD_M) {
+        if (speed_mph < ODOM_MIN_SPEED_THRESHOLD_MPH) {
             save_odom();
             moving = false;
         }
