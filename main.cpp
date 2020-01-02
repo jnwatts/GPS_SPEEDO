@@ -175,8 +175,8 @@ void show_odom(void)
 {
     odom_t o;
     float dist;
-    float fract, whole;
-    const char *fmt;
+    float whole, fract;
+    int whole_w, fract_w;
 
     switch (display_mode) {
         case MODE_SHOW_ODOM_HI:
@@ -205,30 +205,32 @@ void show_odom(void)
     switch (display_mode) {
         case MODE_SHOW_ODOM_HI:
             // Given 123456.78, show 12
-            dist = (int)(whole * 0.0001) % 10000;
-            fmt = "%4.0f";
+            whole *= 0.0001;
+            fract_w = 0;
             break;
         case MODE_SHOW_ODOM_LO:
             // Given 123456.78, show 3456
-            dist = (int)whole % 10000;
-            fmt = "%4.0f";
+            fract_w = 0;
             break;
         case MODE_SHOW_TRIP_A:
             // Given 123456.78, show 456.7
-            dist = ((int)whole % 1000) + fract;
-            fmt = "%3.1f";
+            whole_w = 3;
+            fract_w = 1;
             break;
         case MODE_SHOW_TRIP_B:
             // Given 123456.78, show 456.7
-            dist = ((int)whole % 1000) + fract;
-            fmt = "%3.1f";
+            whole_w = 3;
+            fract_w = 1;
             break;
         default:
             return;
     }
 
     char buf[16];
-    snprintf(buf, sizeof(buf), fmt, dist);
+    if (fract_w > 0)
+        snprintf(buf, sizeof(buf), "%*d.%*d", whole_w, (int)(whole) % (int)pow(10, whole_w), fract_w, (int)(fract) % (int)pow(10, fract_w));
+    else
+        snprintf(buf, sizeof(buf), "%4d", (int)whole);
     tm1650.puts(buf);
 }
 
