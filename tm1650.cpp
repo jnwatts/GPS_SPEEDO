@@ -11,26 +11,8 @@
 
 #include "tm1650.h"
 
-static const uint8_t CHARACTERS[] = {
-	0x3F, ///< 0
-	0x06, ///< 1
-	0x5B, ///< 2
-	0x4F, ///< 3
-	0x66, ///< 4
-	0x6D, ///< 5
-	0x7D, ///< 6
-	0x07, ///< 7
-	0x7F, ///< 8
-	0x6F, ///< 9
-	0x77, ///< A
-	0x7C, ///< b
-	0x39, ///< c
-	0x5E, ///< d
-	0x79, ///< E
-	0x71, ///< F
-	0x40, ///< -
-	0x00, ///< ' '
-};
+#include "ascii_7seg.h"
+#define CHARACTERS SevenSegmentASCII
 static const int NUM_CHARACTERS = sizeof(CHARACTERS) / sizeof(*CHARACTERS);
 
 static const uint8_t DOT = 0x80;
@@ -138,7 +120,7 @@ void TM1650::locate(int column)
 
 void TM1650::_bufferChar(char c)
 {
-	int i;
+	unsigned int i;
 
 	if (this->_column >= TM1650_COLUMNS)
 		return;
@@ -152,21 +134,15 @@ void TM1650::_bufferChar(char c)
 	}
 
 	if (c >= 0 && c <= 0xF) {
-		i = c;
-	} else if (c >= '0' && c <= '9') {
-		i = (c - '0');
-	} else if (c >= 'a' && c <= 'f') {
-		i = (c - 'a' + 0xA);
-	} else if (c >= 'A' && c <= 'F') {
-		i = (c - 'A' + 0xA);
-	} else if (c == ' ') {
-		i = 17;
+		i = '0' - ' ' + c;
+	} else if (c <= 0x7F) {
+		i = c - ' ';
 	} else { // '-' and all others
-		i = 16;
+		i = '-' - ' ';
 	}
 
 	if (i >= NUM_CHARACTERS)
-		i = 16;
+		i = '-' - ' ';
 
 	this->_buffer[this->_column++] = CHARACTERS[i];
 }
