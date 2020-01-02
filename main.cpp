@@ -18,6 +18,8 @@ const char *ODOM_BIN = "odom.bin";
 const double ODOM_MIN_SPEED_THRESHOLD_MPH = 1;
 const double ODOM_MOVING_DISTANCE_THRESHOLD_M = 5.0;
 const double ODOM_SAVE_DISTANCE_THRESHOLD_M = 50 * METERS_PER_MILE;
+const float MIN_TIME_BETWEEN_SAVE_S = 10;
+const float MAX_TIME_BETWEEN_SAVE_S = 10 * 60; // 10 minutes
 
 TinyGPS gps;
 Serial gps_uart(GPS_TX, GPS_RX); //TODO: PPS? EN?
@@ -27,6 +29,7 @@ FS fs;
 TM1650 tm1650(TM1650_DIO, TM1650_CLK, TM1650_AIN);
 Timer display_timer;
 Timeout overlay_timer;
+Timer save_timer;
 
 volatile bool gps_changed = false;
 int display_mode = MODE_SHOW_SPEED;
@@ -88,6 +91,7 @@ int main()
     tm1650.setBrightness(3);
 
     display_timer.start();
+    save_timer.start();
 
     if (!fs.init())
         show_error(ERR_DISK);
@@ -107,6 +111,9 @@ int main()
     set_color(COLOR_OFF);
 
     while (true) {
+        if (save_timer.read() > MAX_TIME_BETWEEN_SAVE_S)
+            save_odom();
+
         if (gps_changed) {
             update_position();
             gps_changed = false;
@@ -343,6 +350,10 @@ int load_odom(void)
 int save_odom(void)
 {
     double o[ODOM_COUNT];
+
+    if (save_timer.read() < MIN_TIME_BETWEEN_SAVE_S)
+        return 1;
+    save_timer.reset();
 
     for (int i = 0; i < ODOM_COUNT; i++)
         o[i] = odom.get_odom((odom_t)i);
