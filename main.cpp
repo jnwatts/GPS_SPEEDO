@@ -405,6 +405,7 @@ void handle_key(input_key_t key)
         else if (display_mode == MODE_SHOW_TRIP_B)
             odom.reset_odom(ODOM_TRIP_B);
         save_odom();
+        show_overlay("RST ");
         break;
     default:
         break;
