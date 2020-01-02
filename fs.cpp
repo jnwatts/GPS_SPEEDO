@@ -78,13 +78,15 @@ int FS::append_file(const char *fn, const void *data, size_t size)
 {
     struct fat_file_struct *fd;
     intptr_t count;
+    int32_t offset;
 
     fd = open_file_in_dir(this->_fs, this->_dd, fn);
     // Missing file is bad
     if (!fd)
         goto err;
 
-    if (!fat_seek_file(fd, 0, FAT_SEEK_END))
+    offset = 0;
+    if (!fat_seek_file(fd, &offset, FAT_SEEK_END))
         goto err_file;
 
     count = fat_write_file(fd, (uint8_t*)data, size);
