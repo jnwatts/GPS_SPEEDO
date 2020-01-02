@@ -297,6 +297,7 @@ void update_position(void)
     if (!have_position) {
         prev_lat = lat;
         prev_lon = lon;
+        have_position = true;
         return;
     }
 
