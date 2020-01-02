@@ -376,7 +376,6 @@ void update_position(void)
     if (prev_lat == lat && prev_lon == lon)
         return;
 
-// printf    ("%s %d %f %f\n", __func__, __LINE__, lat, lon);
     dist_m = TinyGPS::distance_between(prev_lat, prev_lon, lat, lon);
 
     prev_lat = lat;
