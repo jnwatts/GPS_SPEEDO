@@ -176,6 +176,7 @@ void show_odom(void)
     double dist;
     double whole, fract;
     int whole_w, fract_w;
+    int whole_mod, fract_mod;
 
     switch (display_mode) {
         case MODE_SHOW_ODOM_HI:
@@ -209,10 +210,12 @@ void show_odom(void)
                 tm1650.clear();
                 return;
             }
+            whole_w = 4;
             fract_w = 0;
             break;
         case MODE_SHOW_ODOM_LO:
             // Given 123456.78, show 3456
+            whole_w = 4;
             fract_w = 0;
             break;
         case MODE_SHOW_TRIP_A:
@@ -229,11 +232,16 @@ void show_odom(void)
             return;
     }
 
+    whole_mod = (int)pow(10, whole_w);
+    fract_mod = (int)pow(10, fract_w);
+
     char buf[16];
-    if (fract_w > 0)
-        snprintf(buf, sizeof(buf), "%*d.%*d", whole_w, (int)(whole) % (int)pow(10, whole_w), fract_w, (int)(fract) % (int)pow(10, fract_w));
+    if (whole_w > 0 && fract_w > 0)
+        snprintf(buf, sizeof(buf), "%*d.%*d", whole_w, (int)(whole) % whole_mod, fract_w, (int)(fract * fract_mod) % fract_mod);
+    else if (whole_w == 0)
+        snprintf(buf, sizeof(buf), "%*d", fract_w, (int)(fract * fract_mod) % fract_mod);
     else
-        snprintf(buf, sizeof(buf), "%4d", (int)whole);
+        snprintf(buf, sizeof(buf), "%*d", whole_w, (int)(whole) % whole_mod);
     tm1650.puts(buf);
 }
 
