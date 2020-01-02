@@ -95,9 +95,13 @@ int main()
     load_odom();
 
     /* TODO:
-    * (Other than testing)
+    * - Hrmm.. min distance threshold currently assumes 10hz, but I think I actually have 1hz? Update code to use time info for reality check.
+    * - De-Arduino-ize TinyGPS
     * - Increase baud rate for gps (check datasheet)
-    * - Use "keys" to get to move through display modes
+    * - Increase fix-rate for gps (check datasheet)
+    * - Implement GPS PPS
+    * - Allow control of gps from UART0?
+    * - Long-press for keys (too easy to reset trip meters)
     */
 
     set_color(COLOR_OFF);
