@@ -307,6 +307,16 @@ void hide_overlay(void)
     overlay_visible = false;
 }
 
+void show_debug(int num, float delay)
+{
+    char buf[5];
+    snprintf(buf, sizeof(buf), "%4d", num);
+    tm1650.puts(buf);
+    if (delay > 0.0)
+        wait(delay);
+    display_mode = MODE_SHOW_DEBUG;
+}
+
 int load_odom(void)
 {
     double o[ODOM_COUNT];

@@ -52,4 +52,4 @@ enum dist_unit_t {
 static const float MILES_PER_METER = 0.000621371;
 static const float METERS_PER_MILE = 1609.34;
 
-void debug_int(int num, float delay = 0.5);
+void show_debug(int num, float delay = 0.5);
