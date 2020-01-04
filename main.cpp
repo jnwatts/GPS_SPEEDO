@@ -23,6 +23,7 @@ const double ODOM_SAVE_DISTANCE_THRESHOLD_M = 50 * METERS_PER_MILE;
 const float MIN_TIME_BETWEEN_SAVE_S = 10;
 const float MAX_TIME_BETWEEN_SAVE_S = 10 * 60; // 10 minutes
 
+Serial pc(USBTX, USBRX);
 TinyGPS gps;
 Serial gps_uart(GPS_TX, GPS_RX); //TODO: PPS? EN?
 DigitalOut gps_en(GPS_EN);
@@ -77,6 +78,8 @@ void uart_cb(void)
 
 int main()
 {
+    pc.baud(115200);
+
     set_color(COLOR_RED);
 
     startMillis();

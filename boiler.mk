@@ -91,7 +91,7 @@ flash: $(PROJECT).bin
 	cp $(PROJECT).bin $(MOUNT_POINT)
 
 serial:
-	stty -F /dev/ttyACM0 speed 9600 raw
+	stty -F /dev/ttyACM0 speed 115200 raw
 	cat /dev/ttyACM0
 
 clean:
