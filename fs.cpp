@@ -76,14 +76,20 @@ int FS::write_file(const char *fn, const void *data, size_t size)
 
 int FS::append_file(const char *fn, const void *data, size_t size)
 {
+    struct fat_dir_entry_struct file_entry;
     struct fat_file_struct *fd;
     intptr_t count;
     int32_t offset;
 
     fd = open_file_in_dir(this->_fs, this->_dd, fn);
-    // Missing file is bad
-    if (!fd)
-        goto err;
+    if (!fd) {
+        if (!fat_create_file(this->_dd, fn, &file_entry))
+            goto err;
+
+        fd = open_file_in_dir(this->_fs, this->_dd, fn);
+        if (!fd)
+            goto err;
+    }
 
     offset = 0;
     if (!fat_seek_file(fd, &offset, FAT_SEEK_END))
