@@ -8,8 +8,8 @@
 #include "fs.h"
 #include "tm1650.h"
 #include "pins.h"
+#include "ublox.h"
 
-// #define DEBUG_GPS_INPUT
 #define PRETTY_LOG
 
 #include "main.h"
@@ -24,9 +24,7 @@ const float MIN_TIME_BETWEEN_SAVE_S = 10;
 const float MAX_TIME_BETWEEN_SAVE_S = 10 * 60; // 10 minutes
 
 Serial pc(USBTX, USBRX);
-TinyGPS gps;
-Serial gps_uart(GPS_TX, GPS_RX); //TODO: PPS? EN?
-DigitalOut gps_en(GPS_EN);
+Ublox gps(GPS_TX, GPS_RX, GPS_EN, NC);
 Odom odom;
 FS fs;
 TM1650 tm1650(TM1650_DIO, TM1650_CLK, TM1650_AIN);
@@ -34,7 +32,6 @@ Timer display_timer;
 Timeout overlay_timer;
 Timer save_timer;
 
-volatile bool gps_changed = false;
 int display_mode = MODE_SHOW_SPEED;
 const mode_func_t mode_func[] = {
     show_speed,
@@ -66,16 +63,6 @@ int sats_used, sats_inview;
 int pdop, hdop;
 bool overlay_visible = false;
 
-void uart_cb(void)
-{
-    int c = gps_uart.getc();
-#ifdef DEBUG_GPS_INPUT
-    fputc(c, stdout);
-#endif
-    if (gps.encode(c))
-        gps_changed = true;
-}
-
 int main()
 {
     pc.baud(115200);
@@ -85,10 +72,7 @@ int main()
     startMillis();
 
     // Let GPS start warming up as soon as possible
-    gps_en = 0;
-    gps_uart.baud(9600);
-    gps_uart.attach(uart_cb);
-    gps_en = 1;
+    gps.set_enabled(true);
 
     tm1650.init();
     tm1650.setDisplay(true);
@@ -113,16 +97,28 @@ int main()
     * - Long-press for keys (too easy to reset trip meters)
     */
 
+    show_overlay("INIT");
+
+    //TODO: Detect GPS startup rather than assuming
+    wait(1.0);
+    gps.set_baud(115200);
+    gps.disable_feature("GLL"); // Not used by TinyGPS
+    gps.disable_feature("ZDA"); // Not used by TinyGPS
+    gps.disable_feature("VTG"); // Not used by TinyGPS (speed: This could be higher performance way to get speed?)
+    gps.set_feature_rate("RMC", 1); // Speed, time, etc
+    gps.set_feature_rate("GGA", 5);
+    gps.set_feature_rate("GSA", 10);
+    gps.set_feature_rate("GSV", 20);
+    gps.set_fix_rate(Ublox::RATE_10Hz);
+
     set_color(COLOR_OFF);
 
     while (true) {
         if (save_timer.read() > MAX_TIME_BETWEEN_SAVE_S)
             save_odom();
 
-        if (gps_changed) {
+        if (gps.changed())
             update_position();
-            gps_changed = false;
-        }
 
         if (!overlay_visible && display_timer.read_ms() >= DISPLAY_MAX_TIME_MS) {
             mode_func[display_mode]();
