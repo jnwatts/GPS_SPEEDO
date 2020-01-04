@@ -93,7 +93,7 @@ int main()
     tm1650.init();
     tm1650.setDisplay(true);
     display_test();
-    tm1650.setBrightness(3);
+    tm1650.setBrightness(1);
 
     display_timer.start();
     save_timer.start();
