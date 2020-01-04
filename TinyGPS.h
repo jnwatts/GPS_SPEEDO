@@ -27,18 +27,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #ifndef TinyGPS_h
 #define TinyGPS_h
 
-#ifdef ARDUINO
-#if ARDUINO >= 100
-#include "Arduino.h"
-#else
-#include "WProgram.h"
-#endif
-#else /* ARDUINO */
-#include <inttypes.h>
-typedef unsigned char byte;
-#endif /* ARDUINO */
-
-
+#include <mbed.h>
+#include <stdint.h>
 #include <stdlib.h>
 
 #define _GPS_VERSION 13 // software version of this library
@@ -141,8 +131,8 @@ public:
 #endif /* DEBUG_GPSTIME */
 
   void d_get_position(double *latitude, double *longitude, unsigned long *fix_age = 0);
-  void crack_datetime(int *year, byte *month, byte *day, 
-  byte *hour, byte *minute, byte *second, byte *hundredths = 0, unsigned long *fix_age = 0);
+  void crack_datetime(int *year, uint8_t *month, uint8_t *day,
+  uint8_t *hour, uint8_t *minute, uint8_t *second, uint8_t *hundredths = 0, unsigned long *fix_age = 0);
   inline void  resetGPSstatusVars(void) {
     _satsused   = GPS_INVALID_SATELLITES;
     _satsinview = GPS_INVALID_SATELLITES;
@@ -197,16 +187,17 @@ protected:
 
   unsigned long _last_time_fix, _new_time_fix;
   unsigned long _last_position_fix, _new_position_fix;
-  unsigned long _last_character_received_time;
 
   // parsing state variables
-  byte _parity;
+  uint8_t _parity;
   bool _is_checksum_term;
   char _term[15];
-  byte _sentence_type;
-  byte _term_number;
-  byte _term_offset;
+  uint8_t _sentence_type;
+  uint8_t _term_number;
+  uint8_t _term_offset;
   bool _gps_data_good;
+  Timer _gps_time_ref;
+  Timer _gps_position_ref;
 
 #ifndef _GPS_NO_STATS
   // statistics
@@ -225,16 +216,5 @@ protected:
   long gpsatol(const char *str);
   int gpsstrcmp(const char *str1, const char *str2);
 };
-
-#if !defined(ARDUINO) 
-// Arduino 0012 workaround
-#undef int
-#undef char
-#undef long
-#undef byte
-#undef double
-#undef abs
-#undef round 
-#endif
 
 #endif

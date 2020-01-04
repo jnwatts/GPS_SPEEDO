@@ -35,15 +35,16 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  * contains both date and time, so I have modified the code in TinyGPS.cpp
  * to record the millis() when a '$' character is received as the GPS time
  * fix reference, rather than when the time is decoded.
+ *
+ * -- 2019-01-04 update by JNW
+ * Replaced millis() with mbed Timers _gps_time_ref and _gps_position_ref
  */
 
-#ifndef ARDUINO
 #include <math.h>
 #include <time.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include "arduino_util.h"
-#endif /* ARDUINO */
+#include <string.h>
 
 #include "TinyGPS.h"
 
@@ -69,7 +70,6 @@ TinyGPS::TinyGPS()
   ,  _fixtype(GPS_INVALID_FIXTYPE)
   ,  _last_time_fix(GPS_INVALID_FIX_TIME)
   ,  _last_position_fix(GPS_INVALID_FIX_TIME)
-  ,  _last_character_received_time(0)
   ,  _parity(0)
   ,  _is_checksum_term(false)
   ,  _sentence_type(_GPS_SENTENCE_OTHER)
@@ -82,20 +82,12 @@ TinyGPS::TinyGPS()
 #endif
 {
   _term[0] = '\0';
+  _gps_time_ref.start();
+  _gps_position_ref.start();
 }
 
-#ifndef ARDUINO
-/*
- * Resolve some undefined functions and #defines when this code is being
- * used in a non-Arduino environment.
- */
-
-#define TWO_PI M_PI * 2
-
-inline double radians(double degrees) { return M_PI * (degrees / 180); }
-inline double degrees(double radians) { return (radians * 180) / M_PI; }
-inline double sq(double f)            { return f * f; }
-#endif /* ARDUINO */
+static inline double radians(double degrees) { return M_PI * (degrees / 180); }
+static inline double degrees(double radians) { return (radians * 180) / M_PI; }
 
 //
 // public methods
@@ -104,7 +96,7 @@ inline double sq(double f)            { return f * f; }
 bool TinyGPS::encode(char c)
 {
   bool valid_sentence = false;
-  unsigned long charReadTime = millis();
+  unsigned long charReadTime = _gps_time_ref.read_ms();
 
 #ifndef _GPS_NO_STATS
   ++_encoded_characters;
@@ -132,21 +124,7 @@ bool TinyGPS::encode(char c)
     _parity = 0;
     _sentence_type = _GPS_SENTENCE_OTHER;
     _is_checksum_term = false;
-    //_new_time_fix = millis();   // synch time fix age at start of sentence
-
-    // Detect the start of a new "paragraph" of NMEA sentences by looking
-    // for a long gap between characters.
-    //
-    // A continuous sequence of characters at 4800 baud will be spaced approx
-    // 2mS apart (10/4800 S). At 2400 baud this becomes 4mS, and at 9600
-    // baud, 1mS. Here we use an arbitary value of 100mS to indicate
-    // the minimum time between one reporting cycle and the next.
-    // Because this character is a '$' we know it's the start of a sentence.
-    if ((int32_t)(charReadTime - _last_character_received_time) > 100)
-    {
-      _new_time_fix = charReadTime; // synch time fix age at start of paragraph
-    }
-
+    _new_time_fix = charReadTime;   // synch time fix age at start of sentence
     break;
 
   default:
@@ -157,8 +135,6 @@ bool TinyGPS::encode(char c)
       _parity ^= c;
     break;
   }
-
-  _last_character_received_time = charReadTime;
 
   return valid_sentence;
 }
@@ -231,7 +207,7 @@ bool TinyGPS::term_complete()
 {
   if (_is_checksum_term)
   {
-    byte checksum = 16 * from_hex(_term[0]) + from_hex(_term[1]);
+    uint8_t checksum = 16 * from_hex(_term[0]) + from_hex(_term[1]);
     //printf("TinyGPS::term_complete(): inside \"if (_is_checksum_term).  checksum=0x%02x  _parity=0x%02x\"\n", checksum, _parity);
     if (checksum == _parity)
     {
@@ -314,7 +290,6 @@ bool TinyGPS::term_complete()
   {
   case COMBINE(_GPS_SENTENCE_GPRMC, 1): // Time
     _new_time = parse_decimal();
-    // _new_time_fix = millis();        // _new_time_fix set when '$' received
     break;
   case COMBINE(_GPS_SENTENCE_GPGGA, 1): // Time
     // Ignore this time because it's already skewed by > 100mS
@@ -333,7 +308,7 @@ bool TinyGPS::term_complete()
 #ifndef _GPS_TIME_ONLY
     _new_latitude = parse_degrees();
 #endif /* _GPS_TIME_ONLY */
-    _new_position_fix = millis();
+    _new_position_fix = _gps_position_ref.read_ms();
     break;
   case COMBINE(_GPS_SENTENCE_GPGSV, 3): // Satellites in view
     // we've got our number of sats
@@ -427,8 +402,8 @@ double TinyGPS::distance_between (double lat1, double long1, double lat2, double
   double slat2 = sin(lat2);
   double clat2 = cos(lat2);
   delta = (clat1 * slat2) - (slat1 * clat2 * cdlong);
-  delta = sq(delta);
-  delta += sq(clat2 * sdlong);
+  delta *= delta;
+  delta += (clat2 * sdlong) * (clat2 * sdlong);
   delta = sqrt(delta);
   double denom = (slat1 * slat2) + (clat1 * clat2 * cdlong);
   delta = atan2(delta, denom);
@@ -450,7 +425,7 @@ double TinyGPS::course_to (double lat1, double long1, double lat2, double long2)
   a2 = atan2(a1, a2);
   if (a2 < 0.0)
   {
-    a2 += TWO_PI;
+    a2 += (M_PI * 2);
   }
   return degrees(a2);
 }
@@ -477,58 +452,21 @@ void TinyGPS::get_position(long *latitude, long *longitude, unsigned long *fix_a
 
   if (fix_age)
   {
-#ifdef ARDUINO
     *fix_age = _last_position_fix == GPS_INVALID_FIX_TIME
-                 ? GPS_INVALID_AGE : (millis() - _last_position_fix);
-#else /* ARDUINO */
-    *fix_age = 0;
-#endif /* ARDUINO */
+                 ? GPS_INVALID_AGE : (_gps_position_ref.read_ms() - _last_position_fix);
+                 _gps_position_ref.reset();
   }
 }
 
 // date as ddmmyy, time as hhmmsscc, and age in milliseconds
-#ifdef ARDUINO
 void TinyGPS::get_datetime(unsigned long *date, unsigned long *time, unsigned long *age)
 {
   if (date) *date = _date;
   if (time) *time = _time;
   if (age) *age = _last_time_fix == GPS_INVALID_FIX_TIME ?
-   GPS_INVALID_AGE : millis() - _last_time_fix;
+   GPS_INVALID_AGE : _gps_time_ref.read_ms() - _last_time_fix;
+  _gps_time_ref.reset(); // Reset timer to prevent ever rolling over
 }
-#else /* ARDUINO */
-void TinyGPS::get_datetime(unsigned long *date, unsigned long *timeval, unsigned long *age)
-{
-    struct timespec ts;
-    struct tm tt;
-
-    clock_gettime(CLOCK_REALTIME, &ts);
-    ts.tv_sec += monotonic_clkGpsOffset;
-
-    gmtime_r(&ts.tv_sec, &tt);      // thread safe version of gmtime()
-
-    if (date)
-    {
-        if (tt.tm_year >= 100)
-            tt.tm_year -= 100;
-        *date = tt.tm_year + (tt.tm_mon + 1) * 100 + tt.tm_mday * 10000;
-    }
-    if (timeval)
-        *timeval = tt.tm_hour * 1000000 + tt.tm_min * 10000 + tt.tm_sec * 100 + ts.tv_nsec / 10000000;
-    if (age)
-    {
-        *age = 100 + random() % 51;     // random value between 100 and 150
-        //*age = 0;     // just an arbitary value
-    }
-
-#ifdef DEBUG_GPSTIME
-    char buf[100];
-    snprintf_P(buf, sizeof(buf),
-               PSTR("TinyGPS::get_datetime(): date=%06lu, timeval=%08lu, age=%lu"),
-               date ? *date : 0, timeval ? *timeval : 0, age ? *age : 0);
-    Serial.println(buf);
-#endif /* DEBUG_GPSTIME */
-}
-#endif /* ARDUINO */
 
 void TinyGPS::d_get_position(double *latitude, double *longitude, unsigned long *fix_age)
 {
@@ -538,8 +476,8 @@ void TinyGPS::d_get_position(double *latitude, double *longitude, unsigned long 
   *longitude = lat == GPS_INVALID_ANGLE ? GPS_INVALID_F_ANGLE : (lon / 1000000.0);
 }
 
-void TinyGPS::crack_datetime(int *year, byte *month, byte *day,
-  byte *hour, byte *minute, byte *second, byte *hundredths, unsigned long *age)
+void TinyGPS::crack_datetime(int *year, uint8_t *month, uint8_t *day,
+  uint8_t *hour, uint8_t *minute, uint8_t *second, uint8_t *hundredths, unsigned long *age)
 {
   unsigned long date, time;
   uint16_t t1, t2;              // Used to hold temporary values during calculation

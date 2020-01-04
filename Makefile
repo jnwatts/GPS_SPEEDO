@@ -10,7 +10,6 @@ MOUNT_POINT := /m/FRDM-KL25Z
 ###############################################################################
 # Objects and Paths
 
-SRC += Arduino.cpp
 SRC += fs.cpp
 SRC += leds.cpp
 SRC += main.cpp
