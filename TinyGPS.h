@@ -170,7 +170,7 @@ public:
   void stats(unsigned long *chars, unsigned short *good_sentences, unsigned short *failed_cs);
 #endif
 
-private:
+protected:
   enum {
       _GPS_SENTENCE_GPGGA,
       _GPS_SENTENCE_GPRMC,
