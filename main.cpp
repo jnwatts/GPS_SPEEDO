@@ -336,6 +336,10 @@ int load_odom(void)
         show_overlay("DISK", 1.0);
         wait(1.0);
         show_overlay("FAIL", 1.0);
+
+        for (int i = 0; i < ODOM_COUNT; i++)
+            odom.set_odom((odom_t)i, 0.0);
+
         return 0;
     }
 
