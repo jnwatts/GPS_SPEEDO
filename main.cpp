@@ -10,11 +10,13 @@
 #include "pins.h"
 
 // #define DEBUG_GPS_INPUT
+#define PRETTY_LOG
 
 #include "main.h"
 
 const int DISPLAY_MAX_TIME_MS = 100;
 const char *ODOM_BIN = "odom.bin";
+const char *ODOM_LOG = "odom.log";
 const double ODOM_MOVING_LOWER_BOUND_MPH = 1.0;
 const double ODOM_MOVING_UPPER_BOUND_MPH = 6.0;
 const double ODOM_SAVE_DISTANCE_THRESHOLD_M = 50 * METERS_PER_MILE;
@@ -366,6 +368,28 @@ int save_odom(void)
     last_save_odom = o[ODOM_ENGINE];
 
     show_overlay("SAVE", 0.5);
+
+#ifdef PRETTY_LOG
+    {
+        char buf[72];
+        int buf_len;
+        unsigned long age;
+        int year;
+        uint8_t month, day, hour, minute, second, hundredths;
+        gps.crack_datetime(&year, &month, &day, &hour, &minute, &second, &hundredths, &age);
+        if (year < 2020)
+            year += 20; // Roll-over for if this firmware is still in use 20 years from now. *snicker*
+        buf_len = snprintf(buf, sizeof(buf),
+            "%04d-%02d-%02d %02d:%02d:%02d.%03d+%03lu, %f, %f, %f\n",
+            year, month, day,
+            hour, minute, second, hundredths, age,
+            o[ODOM_ENGINE],
+            o[ODOM_TRIP_A],
+            o[ODOM_TRIP_B]
+        );
+        fs.append_file(ODOM_LOG, buf, buf_len);
+    }
+#endif
 
     result = fs.write_file(ODOM_BIN, &o, sizeof(o));
     if (!result) {
