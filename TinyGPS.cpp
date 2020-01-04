@@ -40,6 +40,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  * Replaced millis() with mbed Timers _gps_time_ref and _gps_position_ref
  */
 
+#include <ctype.h>
 #include <math.h>
 #include <time.h>
 #include <stdlib.h>
@@ -166,7 +167,7 @@ unsigned long TinyGPS::parse_decimal()
   char *p = _term;
   bool isneg = *p == '-';
   if (isneg) ++p;
-  unsigned long ret = 100UL * gpsatol(p);
+  unsigned long ret = 100UL * atol(p);
   while (gpsisdigit(*p)) ++p;
   if (*p == '.')
   {
@@ -184,7 +185,7 @@ unsigned long TinyGPS::parse_decimal()
 unsigned long TinyGPS::parse_degrees()
 {
   char *p;
-  unsigned long left_of_decimal = gpsatol(_term);
+  unsigned long left_of_decimal = atol(_term);
   unsigned long hundred1000ths_of_minute = (left_of_decimal % 100UL) * 100000UL;
   for (p=_term; gpsisdigit(*p); ++p);
   if (*p == '.')
@@ -269,13 +270,13 @@ bool TinyGPS::term_complete()
   // the first term determines the sentence type
   if (_term_number == 0)
   {
-    if (!gpsstrcmp(_term, _GPRMC_TERM))
+    if (strncmp(_term, _GPRMC_TERM, 5) == 0)
       _sentence_type = _GPS_SENTENCE_GPRMC;
-    else if (!gpsstrcmp(_term, _GPGGA_TERM))
+    else if (strncmp(_term, _GPGGA_TERM, 5) == 0)
       _sentence_type = _GPS_SENTENCE_GPGGA;
-    else if (!gpsstrcmp(_term, _GPGSV_TERM))
+    else if (strncmp(_term, _GPGSV_TERM, 5) == 0)
       _sentence_type = _GPS_SENTENCE_GPGSV;
-    else if (!gpsstrcmp(_term, _GPGSA_TERM))
+    else if (strncmp(_term, _GPGSA_TERM, 5) == 0)
       _sentence_type = _GPS_SENTENCE_GPGSA;
     else
       _sentence_type = _GPS_SENTENCE_OTHER;
@@ -298,7 +299,7 @@ bool TinyGPS::term_complete()
     _gps_data_good = _term[0] == 'A';
     break;
   case COMBINE(_GPS_SENTENCE_GPGSA, 2): // Fix type
-    _new_fixtype = (unsigned char) gpsatol(_term);
+    _new_fixtype = (unsigned char) atol(_term);
     break;
   case COMBINE(_GPS_SENTENCE_GPGSA, 15): // PDOP (position dilution of precision)
       _new_pdop = (unsigned short)parse_decimal();
@@ -316,7 +317,7 @@ bool TinyGPS::term_complete()
     // there are usually multiple GPGSV sentences to describe all of the
     // satelites, but that's OK because the each contain the total number
     // of satellites in view.
-    _new_satsinview = (unsigned char) gpsatol(_term);
+    _new_satsinview = (unsigned char) atol(_term);
     break;
   case COMBINE(_GPS_SENTENCE_GPRMC, 4): // N/S
   case COMBINE(_GPS_SENTENCE_GPGGA, 3):
@@ -349,13 +350,13 @@ bool TinyGPS::term_complete()
 #endif /* _GPS_TIME_ONLY */
     break;
   case COMBINE(_GPS_SENTENCE_GPRMC, 9): // Date (GPRMC)
-    _new_date = gpsatol(_term);
+    _new_date = atol(_term);
     break;
   case COMBINE(_GPS_SENTENCE_GPGGA, 6): // Fix data (GPGGA)
     _gps_data_good = _term[0] > '0';
     break;
   case COMBINE(_GPS_SENTENCE_GPGGA, 7): // Satellites used
-    _new_satsused = (unsigned char) gpsatol(_term);
+    _new_satsused = (unsigned char) atol(_term);
     break;
   case COMBINE(_GPS_SENTENCE_GPGGA, 8): // HDOP
 #ifndef _GPS_TIME_ONLY
@@ -367,21 +368,6 @@ bool TinyGPS::term_complete()
     break;
   }
   return false;
-}
-
-long TinyGPS::gpsatol(const char *str)
-{
-  long ret = 0;
-  while (gpsisdigit(*str))
-    ret = 10 * ret + *str++ - '0';
-  return ret;
-}
-
-int TinyGPS::gpsstrcmp(const char *str1, const char *str2)
-{
-  while (*str1 && *str1 == *str2)
-    ++str1, ++str2;
-  return *str1;
 }
 
 /* static */

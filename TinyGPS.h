@@ -214,7 +214,6 @@ protected:
   bool term_complete();
   bool gpsisdigit(char c) { return c >= '0' && c <= '9'; }
   long gpsatol(const char *str);
-  int gpsstrcmp(const char *str1, const char *str2);
 };
 
 #endif
