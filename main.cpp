@@ -354,6 +354,7 @@ int load_odom(void)
 int save_odom(void)
 {
     double o[ODOM_COUNT];
+    int result;
 
     if (save_timer.read() < MIN_TIME_BETWEEN_SAVE_S)
         return 1;
@@ -366,7 +367,13 @@ int save_odom(void)
 
     show_overlay("SAVE", 0.5);
 
-    return fs.write_file(ODOM_BIN, &o, sizeof(o));
+    result = fs.write_file(ODOM_BIN, &o, sizeof(o));
+    if (!result) {
+        show_overlay("DISK", 1.0);
+        wait(1.0);
+        show_overlay("FAIL", 1.0);
+    }
+    return result;
 }
 
 void update_position(void)
