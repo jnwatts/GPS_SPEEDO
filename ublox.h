@@ -17,6 +17,17 @@ public:
         RATE_0_05Hz = 20000, //ms
     };
 
+    enum dyn_model_t {
+        DYN_PORTABLE    = 0, // Portable
+        DYN_STATIONARY  = 2, // Stationary
+        DYN_PEDESTRIAN  = 3, // Pedestrian
+        DYN_AUTOMOTIVE  = 4, // Automotive
+        DYN_SEA         = 5, // Sea
+        DYN_AIRBORNE_1G = 6, // Airborne with <1g Acceleration
+        DYN_AIRBORNE_2G = 7, // Airborne with <2g Acceleration
+        DYN_AIRBORNE_4G = 8, // Airborne with <4g Acceleration
+    };
+
     Ublox(PinName TX, PinName RX, PinName EN = NC, PinName PPS = NC);
 
     void set_enabled(bool enabled);
@@ -30,6 +41,7 @@ public:
     void detect_baud(void);
 
     bool set_fix_rate(uint16_t rate);
+    bool set_dyn_model(dyn_model_t dyn_model);
 
     void reset(void);
     void cold_start(void);

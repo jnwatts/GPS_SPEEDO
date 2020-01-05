@@ -128,6 +128,21 @@ bool Ublox::set_fix_rate(uint16_t rate)
     return this->_write_command(0x06, 0x08, payload, 6);
 }
 
+bool Ublox::set_dyn_model(dyn_model_t dyn_model)
+{
+    uint8_t payload[36];
+
+    memset(payload, 0, 36);
+
+    uint16_t mask = 1u<<0; // apply dyn
+
+    payload[0] = mask;
+    payload[1] = mask >> 8;
+    payload[2] = dyn_model;
+
+    return this->_write_command(0x06, 0x24, payload, 36);
+}
+
 bool Ublox::_write_command(uint8_t msg_class, uint8_t msg_id, const uint8_t *payload, uint16_t msg_len)
 {
     uint8_t CK_A, CK_B;
