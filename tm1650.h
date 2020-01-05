@@ -40,7 +40,7 @@ public:
 	int column(void) const { return this->_column; }
 	int columns(void) const { return TM1650_COLUMNS; }
 
-	input_key_t getKey(void);
+	key_event_t getEvent(void);
 
 private:
 	void _bufferChar(char c);
@@ -55,11 +55,12 @@ private:
 	void _write(uint8_t data);
 
 	Timer _keyTimer;
+	Timer _interKeyTimer;
 	DigitalInOut _dio;
 	DigitalOut _clk;
 	AnalogIn _ain;
 
-	input_key_t _lastKey;
+	key_event_t _lastEvent;
 	int _column;
 	uint8_t _brightness;
 	uint8_t _segment;

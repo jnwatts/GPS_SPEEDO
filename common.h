@@ -1,6 +1,6 @@
 #pragma once
 
-enum input_key_t {
+enum key_code_t {
     KEY_INVALID = 0,
     KEY_DOWN,
     KEY_LEFT,
@@ -8,6 +8,22 @@ enum input_key_t {
     KEY_RIGHT,
     KEY_SELECT,
 };
+
+enum key_action_t {
+    ACTION_NONE,
+    ACTION_PRESS,
+    ACTION_LONG_PRESS,
+    ACTION_RELEASE,
+};
+
+struct key_event_t {
+    key_code_t key;
+    key_action_t action;
+};
+static inline bool operator==(const key_event_t &a, const key_event_t &b) { return a.key == b.key && a.action == b.action; }
+static inline bool operator!=(const key_event_t &a, const key_event_t &b) { return !(a == b); }
+
+static const key_event_t NO_EVENT = { KEY_INVALID, ACTION_NONE };
 
 enum error_t {
     ERR_DISK = 0x10,

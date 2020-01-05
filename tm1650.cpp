@@ -13,11 +13,13 @@
 
 #warning SELECT key is broken until R1 is replaced with 4kOhm
 const int THRESHOLD_SELECT = -1;
-const int THRESHOLD_RIGHT = 100;
-const int THRESHOLD_UP = 70;
-const int THRESHOLD_LEFT = 40;
-const int THRESHOLD_DOWN = 15;
-const int KEY_VALID_TIME = 1000;
+const int THRESHOLD_RIGHT = 0xFFFF;
+const int THRESHOLD_UP = 0xB332;
+const int THRESHOLD_LEFT = 0x6666;
+const int THRESHOLD_DOWN = 0x2666;
+const int KEY_SHORT_PRESS_TIME_MS = 10; // 10ms
+const int KEY_LONG_PRESS_TIME_MS = 1000; // 1s
+const int INTER_KEY_TIME_MS = 25; // 25ms
 
 #include "ascii_7seg.h"
 #define CHARACTERS SevenSegmentASCII
@@ -127,39 +129,65 @@ void TM1650::locate(int column)
 	this->_column = column;
 }
 
-input_key_t TM1650::getKey(void)
+key_event_t TM1650::getEvent(void)
 {
-	input_key_t key = KEY_INVALID;
+	key_event_t event = {KEY_INVALID, ACTION_NONE};
+	int time = this->_keyTimer.read_ms();
+	uint16_t value = this->_ain.read_u16();
 
-	int value = (int)(this->_ain.read() * 100.0);
 	if (value < THRESHOLD_DOWN)
-		key = KEY_DOWN;
+		event.key = KEY_DOWN;
 	else if (value < THRESHOLD_LEFT)
-		key = KEY_LEFT;
+		event.key = KEY_LEFT;
 	else if (value < THRESHOLD_UP)
-		key = KEY_UP;
+		event.key = KEY_UP;
 	else if (value < THRESHOLD_RIGHT)
-		key = KEY_RIGHT;
+		event.key = KEY_RIGHT;
 	else if (value < THRESHOLD_SELECT)
-		key = KEY_SELECT;
-	else
-		key = KEY_INVALID;
+		event.key = KEY_SELECT;
 
-	if (key == KEY_INVALID || key != this->_lastKey) {
-		this->_keyTimer.reset();
-		if (key != KEY_INVALID)
-			this->_keyTimer.start();
-		this->_lastKey = key;
-		return KEY_INVALID;
+	if (this->_lastEvent.action == ACTION_RELEASE) {
+		time = this->_interKeyTimer.read_ms();
+		if (time < INTER_KEY_TIME_MS) {
+			goto no_event;
+		} else {
+			this->_lastEvent = NO_EVENT;
+			this->_interKeyTimer.stop();
+			this->_interKeyTimer.reset();
+		}
 	}
 
-	if (this->_keyTimer.read_us() >= KEY_VALID_TIME) {
+	if (event.key != this->_lastEvent.key || event.key == KEY_INVALID) {
 		this->_keyTimer.stop();
 		this->_keyTimer.reset();
-		return key;
+
+		if (this->_lastEvent.action != ACTION_NONE) {
+			this->_lastEvent.key;
+			this->_lastEvent.action = ACTION_RELEASE;
+			this->_interKeyTimer.start();
+			return this->_lastEvent;
+		}
+
+		if (event.key != KEY_INVALID)
+			this->_keyTimer.start();
+
+		this->_lastEvent = event;
+		goto no_event;
 	}
 
-	return KEY_INVALID;
+	if (this->_lastEvent.action == ACTION_NONE && time >= KEY_SHORT_PRESS_TIME_MS) {
+		this->_lastEvent.action = ACTION_PRESS;
+		return this->_lastEvent;
+	}
+
+	if (this->_lastEvent.action == ACTION_PRESS && time >= KEY_LONG_PRESS_TIME_MS) {
+		this->_lastEvent.action = ACTION_LONG_PRESS;
+		this->_keyTimer.stop();
+		return this->_lastEvent;
+	}
+
+no_event:
+	return NO_EVENT;
 }
 
 void TM1650::_bufferChar(char c)
