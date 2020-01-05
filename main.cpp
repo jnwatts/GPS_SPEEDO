@@ -100,6 +100,7 @@ int main()
     gps.set_feature_rate("GSA", 10);
     gps.set_feature_rate("GSV", 20);
     gps.set_fix_rate(Ublox::RATE_10Hz);
+    gps.set_dyn_model(Ublox::DYN_AUTOMOTIVE);
     tm1650.clear();
 
     set_color(COLOR_OFF);
