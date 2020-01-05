@@ -115,9 +115,9 @@ int main()
             display_timer.reset();
         }
 
-        input_key_t key = tm1650.getKey();
-        if (key != KEY_INVALID)
-            handle_key(key);
+        key_event_t event = tm1650.getEvent();
+        if (event != NO_EVENT)
+            handle_key_event(event);
     }
 }
 
@@ -437,26 +437,32 @@ void update_position(void)
     }
 }
 
-void handle_key(input_key_t key)
+void handle_key_event(key_event_t event)
 {
-    switch (key) {
+    switch (event.key) {
     case KEY_DOWN:
-        if (display_mode < MODE_SHOW_LAST)
-            display_mode++;
-        show_overlay(modes[display_mode].label, 1.0);
+        if (event.action == ACTION_PRESS) {
+            if (display_mode < MODE_SHOW_LAST)
+                display_mode++;
+            show_overlay(modes[display_mode].label, 1.0);
+        }
         break;
     case KEY_UP:
-        if (display_mode > MODE_SHOW_FIRST)
-            display_mode--;
-        show_overlay(modes[display_mode].label, 1.0);
+        if (event.action == ACTION_PRESS) {
+            if (display_mode > MODE_SHOW_FIRST)
+                display_mode--;
+            show_overlay(modes[display_mode].label, 1.0);
+        }
         break;
     case KEY_LEFT:
-        if (display_mode == MODE_SHOW_TRIP_A)
-            odom.reset_odom(ODOM_TRIP_A);
-        else if (display_mode == MODE_SHOW_TRIP_B)
-            odom.reset_odom(ODOM_TRIP_B);
-        save_odom();
-        show_overlay("RST ");
+        if (event.action == ACTION_LONG_PRESS) {
+            if (display_mode == MODE_SHOW_TRIP_A)
+                odom.reset_odom(ODOM_TRIP_A);
+            else if (display_mode == MODE_SHOW_TRIP_B)
+                odom.reset_odom(ODOM_TRIP_B);
+            show_overlay("RST ");
+            save_odom();
+        }
         break;
     default:
         break;
