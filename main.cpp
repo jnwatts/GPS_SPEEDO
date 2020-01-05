@@ -356,7 +356,8 @@ int save_odom(void)
 
     last_save_odom = o[ODOM_ENGINE];
 
-    show_overlay("SAVE", 0.5);
+    if (!overlay_visible)
+        show_overlay("SAVE", 0.5);
 
 #ifdef PRETTY_LOG
     {
