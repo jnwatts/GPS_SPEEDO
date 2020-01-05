@@ -87,9 +87,9 @@ int main()
     * - Set GPS to be in automotive mode
     */
 
-    show_overlay("INIT");
 
     //TODO: Detect GPS startup rather than assuming
+    tm1650.puts("INIT");
     wait(1.0);
     gps.set_baud(115200);
     gps.disable_feature("GLL"); // Not used by TinyGPS
@@ -100,6 +100,7 @@ int main()
     gps.set_feature_rate("GSA", 10);
     gps.set_feature_rate("GSV", 20);
     gps.set_fix_rate(Ublox::RATE_10Hz);
+    tm1650.clear();
 
     set_color(COLOR_OFF);
 
