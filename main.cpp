@@ -32,29 +32,22 @@ Timer display_timer;
 Timeout overlay_timer;
 Timer save_timer;
 
+struct {
+    mode_func_t func;
+    const char *label;
+} modes[] = {
+    {show_speed,  "SPD "},
+    {show_odom,   "LO  "},
+    {show_odom,   "HI  "},
+    {show_odom,   "A   "},
+    {show_odom,   "B   "},
+    {show_sats,   "SATS"},
+    {show_dop,    "HDOP"},
+    {show_dop,    "PDOP"},
+    {show_noop,   "DBG "},
+};
+
 int display_mode = MODE_SHOW_SPEED;
-const mode_func_t mode_func[] = {
-    show_speed,
-    show_odom,
-    show_odom,
-    show_odom,
-    show_odom,
-    show_sats,
-    show_dop,
-    show_dop,
-    show_noop,
-};
-const char *mode_label[] = {
-    "SPD ",
-    "LO  ",
-    "HI  ",
-    "A   ",
-    "B   ",
-    "SATS",
-    "HDOP",
-    "PDOP",
-    "DBG ",
-};
 bool have_position = false;
 double prev_lat, prev_lon;
 double last_save_odom = 0.0;
@@ -118,7 +111,7 @@ int main()
             update_position();
 
         if (!overlay_visible && display_timer.read_ms() >= DISPLAY_MAX_TIME_MS) {
-            mode_func[display_mode]();
+            modes[display_mode].func();
             display_timer.reset();
         }
 
@@ -449,12 +442,12 @@ void handle_key(input_key_t key)
     case KEY_DOWN:
         if (display_mode < MODE_SHOW_LAST)
             display_mode++;
-        show_overlay(mode_label[display_mode], 1.0);
+        show_overlay(modes[display_mode].label, 1.0);
         break;
     case KEY_UP:
         if (display_mode > MODE_SHOW_FIRST)
             display_mode--;
-        show_overlay(mode_label[display_mode], 1.0);
+        show_overlay(modes[display_mode].label, 1.0);
         break;
     case KEY_LEFT:
         if (display_mode == MODE_SHOW_TRIP_A)
