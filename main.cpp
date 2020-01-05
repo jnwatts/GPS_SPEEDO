@@ -81,14 +81,10 @@ int main()
     load_odom();
 
     /* TODO:
-    * - De-Arduino-ize TinyGPS
     * - Implement GPS PPS (Shoot.. this needs to be moved to PORT A.. (or D? B?))
-    * - Long-press for keys (too easy to reset trip meters)
-    * - Set GPS to be in automotive mode
+    * - Detect GPS ready rather than waiting
     */
 
-
-    //TODO: Detect GPS startup rather than assuming
     tm1650.puts("INIT");
     wait(1.0);
     gps.set_baud(115200);
