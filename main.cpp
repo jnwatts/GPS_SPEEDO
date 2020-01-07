@@ -15,6 +15,7 @@
 #include "main.h"
 
 const int DISPLAY_MAX_TIME_MS = 100;
+const int MIN_HDOP_THRESHOLD = 500;
 const char *ODOM_BIN = "odom.bin";
 const char *ODOM_LOG = "odom.log";
 const double ODOM_MOVING_LOWER_BOUND_MPH = 1.0;
@@ -100,6 +101,14 @@ int main()
     tm1650.clear();
 
     set_color(COLOR_OFF);
+
+    while (true) {
+        if (display_timer.read_ms() >= DISPLAY_MAX_TIME_MS) {
+            if (check_for_gps_ready())
+                break;
+            display_timer.reset();
+        }
+    }
 
     while (true) {
         if (save_timer.read() > MAX_TIME_BETWEEN_SAVE_S)
@@ -467,4 +476,30 @@ void handle_key_event(key_event_t event)
     }
 
     return;
+}
+
+int check_for_gps_ready(void)
+{
+    if (!gps.gps_good_data())
+        return 0;
+
+    long lat, lon;
+    unsigned long age_ms;
+
+    gps.get_position(&lat, &lon, &age_ms);
+    if (age_ms > 10*1000) {
+        show_overlay("EFIX");
+        return 0;
+    }
+
+    int new_hdop;
+    new_hdop = gps.hdop();
+    if (new_hdop)
+        hdop = new_hdop;
+
+    char buf[6];
+    snprintf(buf, sizeof(buf), "H%03d", hdop % 1000);
+    tm1650.puts(buf);
+
+    return (hdop <= MIN_HDOP_THRESHOLD) ? 1 : 0;
 }
