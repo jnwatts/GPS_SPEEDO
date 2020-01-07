@@ -44,6 +44,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "main.h"
 
 const int DISPLAY_MAX_TIME_MS = 100;
+const int IDLE_SLEEP_MAX_TIME_MS = 5 * 60 * 1000;
 const int MIN_HDOP_THRESHOLD = 500;
 const char *ODOM_BIN = "odom.bin";
 const char *ODOM_LOG = "odom.log";
@@ -61,6 +62,7 @@ TM1650 tm1650(TM1650_DIO, TM1650_CLK, TM1650_AIN);
 Timer display_timer;
 Timeout overlay_timer;
 Timer save_timer;
+Timer idle_timer;
 
 struct {
     mode_func_t func;
@@ -78,6 +80,8 @@ struct {
 };
 
 int display_mode = MODE_SHOW_SATS;
+bool sleeping = false;
+bool wakeup = false;
 bool waiting_for_gps_ready = true;
 bool have_position = false;
 double prev_lat, prev_lon;
@@ -98,9 +102,6 @@ int main()
 
     startMillis();
 
-    // Let GPS start warming up as soon as possible
-    gps.set_enabled(true);
-
     tm1650.init();
     tm1650.setDisplay(true);
     display_test();
@@ -108,6 +109,7 @@ int main()
 
     display_timer.start();
     save_timer.start();
+    idle_timer.start();
 
     if (!fs.init())
         show_error(ERR_DISK);
@@ -119,6 +121,10 @@ int main()
     * - Detect GPS ready rather than waiting
     */
 
+init_gps:
+    // Let GPS start warming up as soon as possible
+    gps.set_enabled(true);
+    waiting_for_gps_ready = true;
     tm1650.puts("INIT");
     wait(1.0);
     gps.set_baud(115200);
@@ -133,32 +139,50 @@ int main()
     gps.set_dyn_model(Ublox::DYN_AUTOMOTIVE);
     tm1650.clear();
 
+    // Clear any key events
+    tm1650.getEvent();
+
     set_color(COLOR_OFF);
 
     while (true) {
-        if (!waiting_for_gps_ready) {
-            if (save_timer.read() > MAX_TIME_BETWEEN_SAVE_S)
-                save_odom();
+        if (!sleeping) {
+            if (!waiting_for_gps_ready) {
+                if (save_timer.read() > MAX_TIME_BETWEEN_SAVE_S)
+                    save_odom();
 
-            if (gps.changed())
-                update_position();
-        }
-
-        update_dop();
-
-        if (display_timer.read_ms() >= DISPLAY_MAX_TIME_MS) {
-            if (waiting_for_gps_ready)
-                check_for_gps_ready();
-
-            if (!overlay_visible) {
-                modes[display_mode].func();
-                display_timer.reset();
+                if (gps.changed())
+                    update_position();
             }
+
+            update_dop();
+
+            if (display_timer.read_ms() >= DISPLAY_MAX_TIME_MS) {
+                if (waiting_for_gps_ready)
+                    check_for_gps_ready();
+
+                if (!overlay_visible) {
+                    modes[display_mode].func();
+                    display_timer.reset();
+                }
+            }
+
+            if (idle_timer.read_ms() >= IDLE_SLEEP_MAX_TIME_MS)
+                enter_sleep();
         }
 
         key_event_t event = tm1650.getEvent();
         if (event != NO_EVENT)
             handle_key_event(event);
+
+        if (wakeup) {
+            wakeup = false;
+            goto init_gps;
+        }
+
+        if (sleeping)
+            deepsleep();
+        else
+            sleep();
     }
 }
 
@@ -450,6 +474,7 @@ void update_position(void)
     prev_lon = lon;
 
     if (moving) {
+        idle_timer.reset();
         if (speed_mph < ODOM_MOVING_LOWER_BOUND_MPH) {
             save_odom();
             moving = false;
@@ -482,6 +507,14 @@ void update_dop(void)
 
 void handle_key_event(key_event_t event)
 {
+    idle_timer.reset();
+
+    if (sleeping) {
+        if (event.key == KEY_RIGHT && event.action == ACTION_PRESS)
+            exit_sleep();
+        return;
+    }
+
     switch (event.key) {
     case KEY_DOWN:
         if (event.action == ACTION_PRESS) {
@@ -507,6 +540,9 @@ void handle_key_event(key_event_t event)
             save_odom();
         }
         break;
+    case KEY_RIGHT:
+        if (event.action == ACTION_LONG_PRESS && !sleeping)
+            enter_sleep();
     default:
         break;
     }
@@ -529,4 +565,25 @@ void check_for_gps_ready(void)
         waiting_for_gps_ready = false;
         display_mode = MODE_SHOW_SPEED;
     }
+}
+
+void enter_sleep(void)
+{
+    idle_timer.reset();
+    gps.set_enabled(false);
+    tm1650.puts("SLP ");
+    wait(0.75);
+    set_color(COLOR_OFF);
+    tm1650.clear();
+    sleeping = true;
+    wait(1.0);
+}
+
+void exit_sleep(void)
+{
+    wakeup = true;
+    sleeping = false;
+    idle_timer.reset();
+    display_timer.reset();
+    save_timer.reset();
 }

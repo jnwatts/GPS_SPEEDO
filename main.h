@@ -19,3 +19,5 @@ void update_position(void);
 void update_dop(void);
 void handle_key_event(key_event_t event);
 void check_for_gps_ready(void);
+void enter_sleep(void);
+void exit_sleep(void);
