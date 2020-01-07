@@ -16,5 +16,6 @@ void hide_overlay(void);
 int load_odom(void);
 int save_odom(void);
 void update_position(void);
+void update_dop(void);
 void handle_key_event(key_event_t event);
-int check_for_gps_ready(void);
+void check_for_gps_ready(void);

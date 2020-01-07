@@ -48,13 +48,15 @@ struct {
     {show_noop,   "DBG "},
 };
 
-int display_mode = MODE_SHOW_SPEED;
+int display_mode = MODE_SHOW_SATS;
+bool waiting_for_gps_ready = true;
 bool have_position = false;
 double prev_lat, prev_lon;
 double last_save_odom = 0.0;
 bool moving = false;
 int sats_used, sats_inview;
-int pdop, hdop;
+int hdop = TinyGPS::GPS_INVALID_HDOP;
+int pdop = TinyGPS::GPS_INVALID_PDOP;
 bool overlay_visible = false;
 
 char main_buf[72];
@@ -105,23 +107,24 @@ int main()
     set_color(COLOR_OFF);
 
     while (true) {
-        if (display_timer.read_ms() >= DISPLAY_MAX_TIME_MS) {
-            if (check_for_gps_ready())
-                break;
-            display_timer.reset();
+        if (!waiting_for_gps_ready) {
+            if (save_timer.read() > MAX_TIME_BETWEEN_SAVE_S)
+                save_odom();
+
+            if (gps.changed())
+                update_position();
         }
-    }
 
-    while (true) {
-        if (save_timer.read() > MAX_TIME_BETWEEN_SAVE_S)
-            save_odom();
+        update_dop();
 
-        if (gps.changed())
-            update_position();
+        if (display_timer.read_ms() >= DISPLAY_MAX_TIME_MS) {
+            if (waiting_for_gps_ready)
+                check_for_gps_ready();
 
-        if (!overlay_visible && display_timer.read_ms() >= DISPLAY_MAX_TIME_MS) {
-            modes[display_mode].func();
-            display_timer.reset();
+            if (!overlay_visible) {
+                modes[display_mode].func();
+                display_timer.reset();
+            }
         }
 
         key_event_t event = tm1650.getEvent();
@@ -278,21 +281,17 @@ void show_sats(void)
 
 void show_dop(void)
 {
-    int new_hdop, new_pdop;
-    new_hdop = gps.hdop();
-    new_pdop = gps.pdop();
-    if (new_hdop)
-        hdop = new_hdop;
-    if (new_pdop)
-        pdop = new_pdop;
-
     int dop;
-    if (display_mode == MODE_SHOW_HDOP)
+    char label;
+    if (display_mode == MODE_SHOW_HDOP) {
+        label = 'H';
         dop = hdop;
-    else
+    } else {
+        label = 'P';
         dop = pdop;
+    }
 
-    snprintf(main_buf, sizeof(main_buf), "%04d", dop % 10000);
+    snprintf(main_buf, sizeof(main_buf), "%c%03d", label, dop % 10000);
     tm1650.puts(main_buf);
 }
 
@@ -439,6 +438,19 @@ void update_position(void)
     }
 }
 
+void update_dop(void)
+{
+    int new_dop;
+
+    new_dop = gps.hdop();
+    if (new_dop)
+        hdop = new_dop;
+
+    new_dop = gps.pdop();
+    if (new_dop)
+        pdop = new_dop;
+}
+
 void handle_key_event(key_event_t event)
 {
     switch (event.key) {
@@ -473,27 +485,19 @@ void handle_key_event(key_event_t event)
     return;
 }
 
-int check_for_gps_ready(void)
+void check_for_gps_ready(void)
 {
-    if (!gps.gps_good_data())
-        return 0;
-
     long lat, lon;
     unsigned long age_ms;
 
     gps.get_position(&lat, &lon, &age_ms);
-    if (age_ms > 10*1000) {
+    if (age_ms != TinyGPS::GPS_INVALID_AGE && age_ms > 10*1000) {
         show_overlay("EFIX");
-        return 0;
+        return;
     }
 
-    int new_hdop;
-    new_hdop = gps.hdop();
-    if (new_hdop)
-        hdop = new_hdop;
-
-    snprintf(main_buf, sizeof(main_buf), "H%03d", hdop % 1000);
-    tm1650.puts(main_buf);
-
-    return (hdop <= MIN_HDOP_THRESHOLD) ? 1 : 0;
+    if (hdop <= MIN_HDOP_THRESHOLD && gps.gps_good_data()) {
+        waiting_for_gps_ready = false;
+        display_mode = MODE_SHOW_SPEED;
+    }
 }
