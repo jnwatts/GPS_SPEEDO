@@ -57,6 +57,8 @@ int sats_used, sats_inview;
 int pdop, hdop;
 bool overlay_visible = false;
 
+char main_buf[72];
+
 int main()
 {
     pc.baud(115200);
@@ -166,9 +168,8 @@ void display_test(void)
 
 void show_error(int error)
 {
-    char buf[5];
-    snprintf(buf, sizeof(buf), "E %2x", error);
-    tm1650.puts(buf);
+    snprintf(main_buf, sizeof(main_buf), "E %2x", error);
+    tm1650.puts(main_buf);
     set_color(COLOR_RED, 0.25);
     while (1);
 }
@@ -177,11 +178,10 @@ void show_speed(void)
 {
     if (gps.gps_good_data()) {
         double speed = gps.d_speed_mph();
-        char buf[6];
         if (speed > 999.9)
             speed = 999.9; // Let's... hope not.
-        snprintf(buf, sizeof(buf), "%4d", (int)floor(speed));
-        tm1650.puts(buf);
+        snprintf(main_buf, sizeof(main_buf), "%4d", (int)floor(speed));
+        tm1650.puts(main_buf);
     } else {
         tm1650.puts("----");
     }
@@ -252,14 +252,13 @@ void show_odom(void)
     whole_mod = (int)pow(10, whole_w);
     fract_mod = (int)pow(10, fract_w);
 
-    char buf[16];
     if (whole_w > 0 && fract_w > 0)
-        snprintf(buf, sizeof(buf), "%*d.%*d", whole_w, (int)(whole) % whole_mod, fract_w, (int)(fract * fract_mod) % fract_mod);
+        snprintf(main_buf, sizeof(main_buf), "%*d.%*d", whole_w, (int)(whole) % whole_mod, fract_w, (int)(fract * fract_mod) % fract_mod);
     else if (whole_w == 0)
-        snprintf(buf, sizeof(buf), "%*d", fract_w, (int)(fract * fract_mod) % fract_mod);
+        snprintf(main_buf, sizeof(main_buf), "%*d", fract_w, (int)(fract * fract_mod) % fract_mod);
     else
-        snprintf(buf, sizeof(buf), "%*d", whole_w, (int)(whole) % whole_mod);
-    tm1650.puts(buf);
+        snprintf(main_buf, sizeof(main_buf), "%*d", whole_w, (int)(whole) % whole_mod);
+    tm1650.puts(main_buf);
 }
 
 void show_sats(void)
@@ -273,9 +272,8 @@ void show_sats(void)
     if (new_sats_inview)
         sats_inview = new_sats_inview;
 
-    char buf[6];
-    snprintf(buf, sizeof(buf), "%02d.%02d", sats_used, sats_inview);
-    tm1650.puts(buf);
+    snprintf(main_buf, sizeof(main_buf), "%02d.%02d", sats_used, sats_inview);
+    tm1650.puts(main_buf);
 }
 
 void show_dop(void)
@@ -294,9 +292,8 @@ void show_dop(void)
     else
         dop = pdop;
 
-    char buf[6];
-    snprintf(buf, sizeof(buf), "%04d", dop % 10000);
-    tm1650.puts(buf);
+    snprintf(main_buf, sizeof(main_buf), "%04d", dop % 10000);
+    tm1650.puts(main_buf);
 }
 
 void show_noop(void)
@@ -318,9 +315,8 @@ void hide_overlay(void)
 
 void show_debug(int num, float delay)
 {
-    char buf[5];
-    snprintf(buf, sizeof(buf), "%4d", num);
-    tm1650.puts(buf);
+    snprintf(main_buf, sizeof(main_buf), "%4d", num);
+    tm1650.puts(main_buf);
     if (delay > 0.0)
         wait(delay);
     display_mode = MODE_SHOW_DEBUG;
@@ -368,7 +364,6 @@ int save_odom(void)
 
 #ifdef PRETTY_LOG
     {
-        char buf[72];
         int buf_len;
         unsigned long age;
         int year;
@@ -376,7 +371,7 @@ int save_odom(void)
         gps.crack_datetime(&year, &month, &day, &hour, &minute, &second, &hundredths, &age);
         if (year < 2020)
             year += 20; // Roll-over for if this firmware is still in use 20 years from now. *snicker*
-        buf_len = snprintf(buf, sizeof(buf),
+        buf_len = snprintf(main_buf, sizeof(main_buf),
             "%04d-%02d-%02d %02d:%02d:%02d.%03d+%03lu, %f, %f, %f\n",
             year, month, day,
             hour, minute, second, hundredths, age,
@@ -384,7 +379,7 @@ int save_odom(void)
             o[ODOM_TRIP_A],
             o[ODOM_TRIP_B]
         );
-        fs.append_file(ODOM_LOG, buf, buf_len);
+        fs.append_file(ODOM_LOG, main_buf, buf_len);
     }
 #endif
 
@@ -497,9 +492,8 @@ int check_for_gps_ready(void)
     if (new_hdop)
         hdop = new_hdop;
 
-    char buf[6];
-    snprintf(buf, sizeof(buf), "H%03d", hdop % 1000);
-    tm1650.puts(buf);
+    snprintf(main_buf, sizeof(main_buf), "H%03d", hdop % 1000);
+    tm1650.puts(main_buf);
 
     return (hdop <= MIN_HDOP_THRESHOLD) ? 1 : 0;
 }
