@@ -440,7 +440,6 @@ void TinyGPS::get_position(long *latitude, long *longitude, unsigned long *fix_a
   {
     *fix_age = _last_position_fix == GPS_INVALID_FIX_TIME
                  ? GPS_INVALID_AGE : (_gps_position_ref.read_ms() - _last_position_fix);
-                 _gps_position_ref.reset();
   }
 }
 
@@ -451,7 +450,6 @@ void TinyGPS::get_datetime(unsigned long *date, unsigned long *time, unsigned lo
   if (time) *time = _time;
   if (age) *age = _last_time_fix == GPS_INVALID_FIX_TIME ?
    GPS_INVALID_AGE : _gps_time_ref.read_ms() - _last_time_fix;
-  _gps_time_ref.reset(); // Reset timer to prevent ever rolling over
 }
 
 void TinyGPS::d_get_position(double *latitude, double *longitude, unsigned long *fix_age)
